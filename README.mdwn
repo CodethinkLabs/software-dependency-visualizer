@@ -32,6 +32,8 @@ server could be reimplemented in another language fairly easily.
 change to the unpacked directory and run:
 
     neo4j-community-2.3.2/bin/neo4j
+    
+* server.py is hardcoded for password ```insecure``` so you'll need to set neo4j's password to that, or fix server.py
 
 * If this is the first time you've run it, import that data from the examples directory:
 
@@ -39,3 +41,10 @@ change to the unpacked directory and run:
 
 * Start 'server.py' from this repository. You may need to specifically invoke it with Python 3, so use 'python3 server.py'.
 Once this has started, you can point a browser at http://localhost:8080 to see the rendered results.
+
+## Setup for MacOS
+
+```
+brew install python3
+sudo python3 -m pip install pyyaml neo4jrestclient bottle py2neo pyld
+```
