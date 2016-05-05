@@ -22,6 +22,7 @@ import pyld.jsonld
 import yaml
 
 import argparse
+import datetime
 import os
 import warnings
 
@@ -117,7 +118,7 @@ def main():
 
         # Avoid fetching a file that we have available locally. This is a bit
         # hacky though.
-        default_context_url = 'https://raw.githubusercontent.com/ssssam/software-integration-ontology/master/context.jsonld'
+        default_context_url = 'http://localhost:8000/context.jsonld'
         if default_context_url in data['@context']:
             index = data['@context'].index(default_context_url)
             data['@context'][index] = default_context
@@ -127,7 +128,15 @@ def main():
         data = pyld.jsonld.flatten(data)
 
         nodes = []
+        resourceNo = 0
+        startTime = datetime.datetime.now()
         for resource in data:
+            resourceNo+=1
+            currentTime = datetime.datetime.now()
+            delta = currentTime - startTime
+            delta.total_seconds()
+            rate = (float(delta.total_seconds()) / resourceNo)
+            print ("Processing resource %d of %d (%d seconds elapsed; average %.1fs/resource; estimated finish in %ds)"% (resourceNo,len(data),delta.total_seconds(),rate,len(data)*rate-delta.total_seconds()))
             node = find_or_create_node_by_uri(graph, resource['@id'])
 
             # The 'compact_uri' property is just for convenience when exploring
