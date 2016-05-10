@@ -37,6 +37,5 @@
   'Repository': 'sw:Repository'
   'Source': 'sw:Source'
   'Object': 'sw:Object'
-  'Call': 'sw:Call'
   'Symbol': 'sw:Symbol'
   'name': 'https://schema.org/name'
