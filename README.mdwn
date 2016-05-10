@@ -33,7 +33,17 @@ change to the unpacked directory and run:
 
     neo4j-community-2.3.2/bin/neo4j
     
-* server.py is hardcoded for password ```insecure``` so you'll need to set neo4j's password to that, or fix server.py
+* server.py and the 'neo4j' import tool are hardcoded for password ```insecure``` so you'll need to set neo4j's
+  password to that, or modify both the tools. You'll be asked to change it when you connect to neo4j on
+  http://localhost:7474.
+
+* You'll need a copy of context.jsonld which can be served over http. There is one in the http directory. You can
+  start a simple http server using
+
+    cd http
+    python -m SimpleHTTPServer 8000
+
+  Or use another service like ```mini-httpd```.
 
 * If this is the first time you've run it, import that data from the examples directory:
 
