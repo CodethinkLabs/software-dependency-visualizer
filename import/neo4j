@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # Import from SDV canonical representation to Neo4j.
 #
 # It might make more sense to write this in Javascript, but it's much quicker
@@ -189,10 +189,14 @@ def main():
                 # to make sense. But it is totally unreadable to have
                 # properties named <http://example.com/property-name>, and we
                 # avoid that this way.
+
                 key = compact_uri(key, context)
 
                 if not isinstance(value, list):
                     value = [value]
+                # Value must be a list now.
+                if len(value) == 0:
+                    value = [None]
                 for target in value:
                     if isinstance(target, dict):
                         if '@id' not in target:

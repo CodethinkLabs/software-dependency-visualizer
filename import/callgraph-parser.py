@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # This is meant to scan a directory for files called 'calls.*' which
 # are in a proprietary text format showing the calls between objects.
