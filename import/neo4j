@@ -152,6 +152,10 @@ def main():
                 if key == '@id':
                     continue
 
+                # Empty arrays cause problems, so ignore any key with that as a value.
+                if values == []:
+                    continue
+
                 # JSON-LD seems to turn everything into lists, other than @id,
                 # so we assume value is always a list here.
                 assert isinstance(values, list)
