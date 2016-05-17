@@ -151,6 +151,7 @@ path.hlink {
                     expansion = expand[i] || 0,
                     l = gm[i] || (gm[i] = gn[i]) || (gm[i] = {
                         group: i,
+                        name: n.name,
                         size: 0,
                         nodes: [],
                         ig_link_count: 0,
@@ -713,7 +714,7 @@ path.hlink {
                 })
                .on("click", on_node_click);
 		nodeCreate.append("text").attr("x", function(d) { return 0; })
-		.attr("y", function(d) { return 0; } ).attr("fill", function (d) { return fill(d.group); }).text("Hello world");
+		.attr("y", function(d) { return 0; } ).attr("fill", "#000").text( function (d) { return d.name; });
 
 	    nodeCreate.attr( "transform", function(d) { return "translate ("+d.x+" "+d.y+")"; } );
 
