@@ -1,6 +1,7 @@
 function preinit() {
-    nodes = [ { "x": 350, "y": 200, "id": 1, "type": "package", "name": "gtk" }, { "x": 200, "y": 400, "id": 2 }, { "x": 500, "y": 400, "id": 3}, {"x": 350, "y": 150}  ];
-    links = [ { "source": 0, "target": 1 }, {"source": 1, "target":2}, {"source":2, "target":3}, {"source": 3, "target":0} ];
+    uniqueID = 100;
+    nodes = [ Node("gtk", "package") ];
+    links = [ ];
 
     // Go through links and replace the numeric indices with pointers to the actual node object
     // D3's force will do this anyway and it just confuses things to have the numeric IDs in there
@@ -13,6 +14,11 @@ function preinit() {
     packageColours = { "package": "#f00", "object": "#0f0", "symbol": "#00f" };
 }
 
+function Node(name, type)
+{
+    return { "x": 350 + Math.random(), "y": 250+Math.random(), "name": name, "type": type, "id": uniqueID++, "size": 32, "expanded": 0, "markedForDeletion": 0 };
+}
+
 function findNodeByID(id)
 {
     // Horrible search function that should be done with a hash
@@ -22,9 +28,44 @@ function findNodeByID(id)
     return null;
 }
 
+function getChildNodes(node)
+{
+    return [ Node(node.name+"childnode","object") ];
+}
+
 function expandOrContractNode(n) {
-    nodes.push( { "x": 500, "y":500, "id":5, "type": "object", "name": "gtk.o"});
-    links.push( { "source": findNodeByID(1), "target": findNodeByID(5) });
+    var node = findNodeByID(n);
+    console.log("Expand/contract "+n)
+    if(node.expanded) {
+	// Collapse it (remove all child linked nodes)
+	newLinks = [];
+	for(var i=0;i<links.length;i++) {
+	    if(links[i].type != "childof" || links[i].source != node) {
+		newLinks.push(links[i]);
+	    } else {
+		// Todo: At the moment, this doesn't mark subnodes of the deleted node for deletion...
+		links[i].target.markedForDeletion = 1;
+	    }
+	}
+	links = newLinks;
+	newNodes = [];
+	for(var i=0;i<nodes.length;i++) {
+	    if(nodes[i].markedForDeletion == 0)
+		newNodes.push(nodes[i]);
+	}
+	nodes = newNodes;
+	node.size = 32;
+	node.expanded = 0;
+    } else {
+	// Expand it
+	var children = getChildNodes(node);
+	for(var i=0;i<children.length;i++) {
+	    nodes.push(children[i]);
+	    links.push( { "source": node, "target": children[i], "type": "childof" } );
+	}
+	node.size = 64;
+	node.expanded = 1;
+    }
 }
 
 function init() {
@@ -49,7 +90,7 @@ function init() {
 	} else {
 	    return "fill:#777";
 	} } )
-	.attr("r", 30);
+	.attr("r", function(d) { return d.size; });
 
     var delay = 100; // milliseconds
 
@@ -78,6 +119,7 @@ function init() {
 	console.log("Click!" + ident);
 	expandOrContractNode(ident);
 	init();
+	force.start();
     }
     circles.call(dragger);
     circles.on("dblclick", clickFn);
