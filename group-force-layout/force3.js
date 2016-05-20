@@ -30,7 +30,7 @@ function findNodeByID(id)
 
 function getChildNodes(node)
 {
-    return [ Node(node.name+"childnode","object") ];
+    return [ Node(node.name+"child",node.type+"-derivative") ];
 }
 
 function expandOrContractNode(n) {
@@ -63,7 +63,7 @@ function expandOrContractNode(n) {
 	    nodes.push(children[i]);
 	    links.push( { "source": node, "target": children[i], "type": "childof" } );
 	}
-	node.size = 64;
+	node.size = 40;
 	node.expanded = 1;
     }
 }
@@ -95,7 +95,7 @@ function init() {
     var delay = 100; // milliseconds
 
     var force = d3.layout.force().size([700,500]).nodes(nodes).links(links);
-    force.linkDistance(100);
+    force.linkDistance(200).gravity(1.0).friction(0.5);
 
     force.on("tick", function () {
         circles.transition().ease('linear').duration(delay)
