@@ -14,17 +14,27 @@ function preinit() {
     packageColours = { "package": "#f00", "object": "#0f0", "symbol": "#00f" };
 }
 
-function Node(name, type)
+function Node(name, type, id = -1)
 {
-    return { "x": 350 + Math.random(), "y": 250+Math.random(), "name": name, "type": type, "id": uniqueID++, "size": 32, "expanded": 0, "markedForDeletion": 0 };
+    if(id==-1) {
+	id = uniqueID++;
+	console.log("New node, ID "+id);
+    }
+    return { "x": 350 + Math.random()*300, "y": 250+Math.random()*300, "name": name, "type": type, "id": id, "size": 32, "expanded": 0, "markedForDeletion": 0 };
 }
 
-function findNodeByID(id)
+function CopyNode(source)
+{
+    return { "x": source.x, "y": source.y, "name": source.name, "type": source.type, "id": source.id, "size": 32, "expanded": source.expanded, "markedForDeletion": 0 };
+}
+
+function findNodeByID(id, nodelist)
 {
     // Horrible search function that should be done with a hash
-    for(var i=0;i<nodes.length;i++) {
-	if(nodes[i].id == id) return nodes[i];
+    for(var i=0;i<nodelist.length;i++) {
+	if(nodelist[i].id == id) return nodelist[i];
     }
+    console.log("No id "+id+" in nodelist");
     return null;
 }
 
@@ -34,7 +44,7 @@ function getChildNodes(node)
 }
 
 function expandOrContractNode(n) {
-    var node = findNodeByID(n);
+    var node = findNodeByID(n, nodes);
     console.log("Expand/contract "+n)
     if(node.expanded) {
 	// Collapse it (remove all child linked nodes)
@@ -68,12 +78,37 @@ function expandOrContractNode(n) {
     }
 }
 
+function duplicateNodes(nodelist)
+{
+    targetNodes = []
+    for(var i=0;i<nodelist.length;i++) {
+	source = nodelist[i];
+	targetNodes.push(CopyNode(source));
+    }
+    return targetNodes;
+}
+
+function duplicateLinks(linklist, nodelist)
+{
+    // This has to locate nodes that are actually in the nodelist
+    targetLinks = []
+    for(var i=0;i<linklist.length;i++)
+    {
+	source = linklist[i];
+	targetLinks.push( { "source": findNodeByID(source.source.id, nodelist), "target": findNodeByID(source.target.id, nodelist), "type": source.type} );
+    }
+    return targetLinks;
+}
+
 function init() {
 
     svg = d3.select('body').select('svg');
     svg.selectAll("*").remove();
 
-    var lines = svg.selectAll("line").data(links).enter().append("line")
+    var d3nodes = duplicateNodes(nodes);
+    var d3links = duplicateLinks(links, d3nodes);
+
+    var lines = svg.selectAll("line").data(d3links).enter().append("line")
 	.attr("x1", function (d) { return d.source.x; })
 	.attr("y1", function (d) { return d.source.y; })
 	.attr("x2", function (d) { return d.target.x; })
@@ -81,7 +116,7 @@ function init() {
 	.attr("style", "stroke: #000; stroke-width: 1px");
 
     var circles = svg.selectAll("circle")
-	.data(nodes).enter().append("circle")
+	.data(d3nodes).enter().append("circle")
 	.attr("cx", function(d) { return d.x; })
 	.attr("cy", function(d) { return d.y; })
         .attr("id", function(d) { return d.id; })
@@ -94,7 +129,7 @@ function init() {
 
     var delay = 100; // milliseconds
 
-    var force = d3.layout.force().size([700,500]).nodes(nodes).links(links);
+    var force = d3.layout.force().size([700,500]).nodes(d3nodes).links(d3links);
     force.linkDistance(200).gravity(1.0).friction(0.5);
 
     force.on("tick", function () {
@@ -124,6 +159,7 @@ function init() {
     circles.call(dragger);
     circles.on("dblclick", clickFn);
     force.start();
+
 }
 
 preinit();
