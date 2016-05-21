@@ -1,6 +1,14 @@
+// External libraries
+declare var d3:any;
+
+// Global variables
+var uniqueID = 100;
+var nodes;
+var links;
+var packageColours;
+
 function preinit() {
-    uniqueID = 100;
-    nodes = [ Node("gtk", "package") ];
+    nodes = [ SoftwareNode("gtk", "package") ];
     links = [ ];
 
     // Go through links and replace the numeric indices with pointers to the actual node object
@@ -14,7 +22,7 @@ function preinit() {
     packageColours = { "package": "#f00", "object": "#0f0", "symbol": "#00f" };
 }
 
-function Node(name, type, id = -1)
+function SoftwareNode(name, type, id = -1)
 {
     if(id==-1) {
 	id = uniqueID++;
@@ -40,7 +48,7 @@ function findNodeByID(id, nodelist)
 
 function getChildNodes(node)
 {
-    return [ Node(node.name+"child",node.type+"-derivative") ];
+    return [ SoftwareNode(node.name+"child",node.type+"-derivative") ];
 }
 
 function expandOrContractNode(n) {
@@ -48,7 +56,7 @@ function expandOrContractNode(n) {
     console.log("Expand/contract "+n)
     if(node.expanded) {
 	// Collapse it (remove all child linked nodes)
-	newLinks = [];
+	var newLinks = [];
 	for(var i=0;i<links.length;i++) {
 	    if(links[i].type != "childof" || links[i].source != node) {
 		newLinks.push(links[i]);
@@ -58,7 +66,7 @@ function expandOrContractNode(n) {
 	    }
 	}
 	links = newLinks;
-	newNodes = [];
+	var newNodes = [];
 	for(var i=0;i<nodes.length;i++) {
 	    if(nodes[i].markedForDeletion == 0)
 		newNodes.push(nodes[i]);
@@ -80,9 +88,9 @@ function expandOrContractNode(n) {
 
 function duplicateNodes(nodelist)
 {
-    targetNodes = []
+    var targetNodes = []
     for(var i=0;i<nodelist.length;i++) {
-	source = nodelist[i];
+        var source = nodelist[i];
 	targetNodes.push(CopyNode(source));
     }
     return targetNodes;
@@ -91,18 +99,17 @@ function duplicateNodes(nodelist)
 function duplicateLinks(linklist, nodelist)
 {
     // This has to locate nodes that are actually in the nodelist
-    targetLinks = []
+    var targetLinks = []
     for(var i=0;i<linklist.length;i++)
     {
-	source = linklist[i];
+    	var source = linklist[i];
 	targetLinks.push( { "source": findNodeByID(source.source.id, nodelist), "target": findNodeByID(source.target.id, nodelist), "type": source.type} );
     }
     return targetLinks;
 }
 
 function init() {
-
-    svg = d3.select('body').select('svg');
+    var svg = d3.select('body').select('svg');
     svg.selectAll("*").remove();
 
     var d3nodes = duplicateNodes(nodes);
