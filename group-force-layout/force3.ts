@@ -7,8 +7,32 @@ var nodes;
 var links;
 var packageColours;
 
+class SoftwareNode {
+    x: number;
+    y: number;
+    name: string;
+    type: string;
+    id: number;
+    size: number;
+    expanded: boolean;
+    markedForDeletion: boolean;
+
+    constructor(name: string, type:string) {
+	var id = uniqueID++;
+	console.log("New node, ID "+id);
+	this.x = 350 + Math.random()*300;
+	this.y = 250+Math.random()*300;
+	this.name = name;
+	this.type = type;
+	this.id = id;
+	this.size = 32;
+	this.expanded = false;
+	this.markedForDeletion = false;
+    }
+}
+
 function preinit() {
-    nodes = [ SoftwareNode("gtk", "package") ];
+    nodes = [ new SoftwareNode("gtk", "package") ];
     links = [ ];
 
     // Go through links and replace the numeric indices with pointers to the actual node object
@@ -22,21 +46,13 @@ function preinit() {
     packageColours = { "package": "#f00", "object": "#0f0", "symbol": "#00f" };
 }
 
-function SoftwareNode(name, type, id = -1)
+
+function CopyNode(source:SoftwareNode) : SoftwareNode
 {
-    if(id==-1) {
-	id = uniqueID++;
-	console.log("New node, ID "+id);
-    }
-    return { "x": 350 + Math.random()*300, "y": 250+Math.random()*300, "name": name, "type": type, "id": id, "size": 32, "expanded": 0, "markedForDeletion": 0 };
+    return { "x": source.x, "y": source.y, "name": source.name, "type": source.type, "id": source.id, "size": 32, "expanded": source.expanded, "markedForDeletion": false };
 }
 
-function CopyNode(source)
-{
-    return { "x": source.x, "y": source.y, "name": source.name, "type": source.type, "id": source.id, "size": 32, "expanded": source.expanded, "markedForDeletion": 0 };
-}
-
-function findNodeByID(id, nodelist)
+function findNodeByID(id : number, nodelist :SoftwareNode[])
 {
     // Horrible search function that should be done with a hash
     for(var i=0;i<nodelist.length;i++) {
@@ -48,7 +64,7 @@ function findNodeByID(id, nodelist)
 
 function getChildNodes(node)
 {
-    return [ SoftwareNode(node.name+"child",node.type+"-derivative") ];
+    return [ new SoftwareNode(node.name+"child",node.type+"-derivative") ];
 }
 
 function expandOrContractNode(n) {
@@ -73,7 +89,7 @@ function expandOrContractNode(n) {
 	}
 	nodes = newNodes;
 	node.size = 32;
-	node.expanded = 0;
+	node.expanded = false;
     } else {
 	// Expand it
 	var children = getChildNodes(node);
@@ -82,7 +98,7 @@ function expandOrContractNode(n) {
 	    links.push( { "source": node, "target": children[i], "type": "childof" } );
 	}
 	node.size = 40;
-	node.expanded = 1;
+	node.expanded = true;
     }
 }
 
