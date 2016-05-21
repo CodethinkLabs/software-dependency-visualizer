@@ -171,10 +171,14 @@ function init() {
 	.attr("y2", function (d) { return d.target.y; })
 	.attr("style", "stroke: #000; stroke-width: 1px");
 
-    var circles = svg.selectAll("circle")
-	.data(d3nodes).enter().append("circle")
-	.attr("cx", function(d) { return d.x; })
-	.attr("cy", function(d) { return d.y; })
+    var circles = svg.selectAll("g")
+	.data(d3nodes).enter().append("g")
+        .attr("id", function(d) { return d.id; })
+        .attr("transform", function(d) { return "translate ("+d.x+" "+d.y+")"; });
+
+    circles.append("circle")
+        .attr("cx", 0)
+	.attr("cy", 0)
         .attr("id", function(d) { return d.id; })
         .attr("style", function(d) { if( d.type in packageColours ) {
 	    return "fill:"+packageColours[d.type];
@@ -183,6 +187,10 @@ function init() {
 	} } )
 	.attr("r", function(d) { return d.size; });
 
+    circles.append("text")
+	.text(function(d) { return d.name; })
+	.attr("x", function(d) { return -this.getBBox().width/2; }).attr("y", function(d) { return d.size; });
+
     var delay = 100; // milliseconds
 
     var force = d3.layout.force().size([700,500]).nodes(d3nodes).links(d3links);
@@ -190,8 +198,7 @@ function init() {
 
     force.on("tick", function () {
         circles.transition().ease('linear').duration(delay)
-            .attr("cx", function(d) { return d.x; })
-            .attr("cy", function(d) { return d.y; });
+            .attr("transform", function(d) { return "translate ("+d.x+" "+d.y+")"; })
 
         lines.transition().ease('linear').duration(delay)
             .attr("x1", function(d) { return d.source.x; })
@@ -202,7 +209,8 @@ function init() {
     var dragger = d3.behavior.drag().on("drag", dragFn);
 
     function dragFn(d) {
-	d3.select(this).attr("cx", d.x = d3.event.x).attr("cy", d.y = d3.event.y);
+	d3.select(this).attr("transform", function(d) { d.x = d3.event.x; d.y = d3.event.y;
+							return "translate ("+d.x+" "+d.y+")"; });
 	force.start();
     }
     function clickFn(d) {
