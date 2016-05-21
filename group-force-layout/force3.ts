@@ -101,7 +101,7 @@ function findNodeByID(id : number, nodelist : SoftwareNode[]) : SoftwareNode
 
 function getChildNodes(node: SoftwareNode) : SoftwareNode[]
 {
-    return [ new SoftwareNode(node.name+"child",node.type+"-derivative") ];
+    return [ new SoftwareNode(node.name+"child",node.type+"-derivative"), new SoftwareNode(node.name+"child2",node.type+"-derivative") ];
 }
 
 function expandOrContractNode(n: number) {
