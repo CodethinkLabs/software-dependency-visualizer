@@ -1,11 +1,15 @@
 // External libraries
 declare var d3:any;
+declare var $:any;
 
 // Global variables
 var uniqueID = 100;
 var nodes;
 var links;
 var packageColours;
+var force;
+
+var childType = { "package": "object", "object": "symbol" };
 
 class SoftwareNode {
     x: number;
@@ -68,7 +72,7 @@ function recursiveMarkForDeletion(target: SoftwareNode) {
 }
 
 function preinit() {
-    nodes = [ new SoftwareNode("gtk", "package") ];
+    nodes = [ new SoftwareNode("calls.liba_aoctcp", "package") ];
     links = [ ];
 
     // Go through links and replace the numeric indices with pointers to the actual node object
@@ -99,9 +103,32 @@ function findNodeByID(id : number, nodelist : SoftwareNode[]) : SoftwareNode
     return null;
 }
 
-function getChildNodes(node: SoftwareNode) : SoftwareNode[]
+
+function expandChildNodes(node: SoftwareNode) : void
 {
-    return [ new SoftwareNode(node.name+"child",node.type+"-derivative"), new SoftwareNode(node.name+"child2",node.type+"-derivative") ];
+    console.log("Requesting children of node: ", node);
+    var nodeid = "id:"+node.name;
+    var children = [];
+
+    // Because we're called from a UI thread, we put all the functionality
+    // to set up the new tree and call init() inside a callback for getJSON.
+    $.getJSON('/info/' + nodeid, function (node_info) {
+        console.log("Displaying node: ", node_info);
+	for(var i=0;i<node_info.contains.length;i++) {
+	    children.push(new SoftwareNode(node.name+":"+node_info.contains[i].name,childType[node.type]));
+	}
+	//ko.applyBindings(node_info);
+
+	for(var i=0;i<children.length;i++) {
+	    nodes.push(children[i]);
+	    links.push( new Link(node, children[i], "childof"));
+	}
+	node.size = 40;
+	node.expanded = true;
+
+	init();
+	force.start();
+    });
 }
 
 function expandOrContractNode(n: number) {
@@ -119,15 +146,10 @@ function expandOrContractNode(n: number) {
 	nodes = purge(nodes);
 	node.size = 32;
 	node.expanded = false;
+	init();
+	force.start();
     } else {
-	// Expand it
-	var children = getChildNodes(node);
-	for(var i=0;i<children.length;i++) {
-	    nodes.push(children[i]);
-	    links.push( new Link(node, children[i], "childof"));
-	}
-	node.size = 40;
-	node.expanded = true;
+	expandChildNodes(node);
     }
 }
 
@@ -193,7 +215,7 @@ function init() {
 
     var delay = 100; // milliseconds
 
-    var force = d3.layout.force().size([700,500]).nodes(d3nodes).links(d3links);
+    force = d3.layout.force().size([700,500]).nodes(d3nodes).links(d3links);
     force.linkDistance(200).gravity(0.1).friction(0.5);
 
     force.on("tick", function () {
@@ -216,9 +238,8 @@ function init() {
     function clickFn(d) {
 	var ident = d3.select(this).attr("id");
 	console.log("Click!" + ident);
+	// This may take a while. We need to run this as a background job...
 	expandOrContractNode(ident);
-	init();
-	force.start();
     }
     circles.call(dragger);
     circles.on("dblclick", clickFn);
