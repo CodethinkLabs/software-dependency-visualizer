@@ -423,4 +423,4 @@ def node_info(node_identifier):
 #node_number = graph_node_number("id:package/source/libgtk")
 #print(graph_present(node_number))
 
-app.run()
+app.run(host='0.0.0.0')
