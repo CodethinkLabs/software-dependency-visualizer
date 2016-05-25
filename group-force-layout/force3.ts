@@ -230,6 +230,22 @@ function init() {
     var svg = d3.select('body').select('svg');
     svg.selectAll("*").remove();
 
+    // This is for SVG arrows, taken from http://www.coppelia.io/2014/07/an-a-to-z-of-extra-features-for-the-d3-force-layout/.
+    svg.append("defs").selectAll("marker")
+        .data(["suit", "licensing", "resolved"])
+	.enter().append("marker")
+        .attr("id", function(d) { return d; })
+        .attr("viewBox", "0 -5 10 10")
+        .attr("refX", 64)
+        .attr("refY", 0)
+        .attr("markerWidth", 6)
+        .attr("markerHeight", 6)
+        .attr("orient", "auto")
+	.append("path")
+        .attr("d", "M0,-5L10,0L0,5 L10,0 L0, -5")
+        .style("stroke", "#4679BD")
+        .style("opacity", "0.6");
+
     // Duplicate all the nodes and links, because d3 changes them in a way we can't yet predict
     // which breaks our model
     var d3nodes = duplicateNodes(nodes);
@@ -283,7 +299,8 @@ function init() {
             .attr("x1", function(d) { return d.source.x; })
             .attr("y1", function(d) { return d.source.y; })
             .attr("x2", function(d) { return d.target.x; })
-            .attr("y2", function(d) { return d.target.y; });
+            .attr("y2", function(d) { return d.target.y; })
+	    .style("marker-end",  "url(#suit)");
     });
     var dragger = d3.behavior.drag().on("drag", dragFn);
 
