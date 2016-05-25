@@ -8,6 +8,8 @@ var nodes;
 var links;
 var packageColours;
 var force;
+var width = 700;
+var height = 500;
 
 var childType = { "package": "object", "object": "symbol" };
 
@@ -84,6 +86,11 @@ function preinit() {
     }
 
     packageColours = { "package": "#f00", "object": "#0f0", "symbol": "#00f" };
+
+    // Set size of svg component
+    var svg = d3.select('body').select('svg')
+        .attr("width", width)
+        .attr("height", height);
 }
 
 function purge<T extends Markable>(list : T[]): T[]
@@ -220,8 +227,13 @@ function init() {
 
     var delay = 100; // milliseconds
 
-    force = d3.layout.force().size([1024,768]).nodes(d3nodes).links(d3links).charge(-500);
-    force.linkDistance(200).gravity(0.1).friction(0.1);
+    force = d3.layout.force()
+        .size([width, height])
+        .nodes(d3nodes)
+        .links(d3links);
+    force.charge(-1000)
+        .linkDistance(200)
+        .gravity(0.1);
 
     force.on("tick", function () {
         circles.transition().ease('linear').duration(delay)
