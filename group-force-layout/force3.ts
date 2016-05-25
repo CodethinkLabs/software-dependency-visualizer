@@ -215,8 +215,8 @@ function init() {
 
     var delay = 100; // milliseconds
 
-    force = d3.layout.force().size([700,500]).nodes(d3nodes).links(d3links);
-    force.linkDistance(200).gravity(0.1).friction(0.5);
+    force = d3.layout.force().size([1024,768]).nodes(d3nodes).links(d3links).charge(-500);
+    force.linkDistance(200).gravity(0.1).friction(0.1);
 
     force.on("tick", function () {
         circles.transition().ease('linear').duration(delay)
