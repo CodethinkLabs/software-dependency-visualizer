@@ -8,8 +8,8 @@ var nodes;
 var links;
 var packageColours;
 var force;
-var width = 700;
-var height = 500;
+var width = 1024;
+var height = 768;
 
 var childType = { "package": "object", "object": "symbol" };
 
@@ -233,10 +233,8 @@ function init() {
 
     circles.append("text")
 	.text(function(d) { var r = d.name.replace(/::/g,"@@");
-			    console.log("Replaced text: "+r);
 			    var i = r.lastIndexOf(":");
 			    var t = d.name.substring(i+1, d.name.length);
-			    console.log("Converting "+d.name+" to "+t);
 			    return  t;})
 	.attr("x", function(d) { return -this.getBBox().width/2; }).attr("y", function(d) { return d.size; });
 
