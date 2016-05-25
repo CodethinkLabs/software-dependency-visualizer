@@ -124,6 +124,9 @@ def node_name(node):
     elif 'compact_uri' in node.properties:
         return node.properties['compact_uri']
     else:
+        print("Returning the node's URI");
+        if type(node.uri) is not str:
+            return "Unknown object"
         return node.uri
 
 
