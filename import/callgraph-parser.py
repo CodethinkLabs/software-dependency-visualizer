@@ -18,9 +18,26 @@ import sys
 import yaml
 
 
+# demangles SunPro mangled names - partially. Arguments aren't parsed yet.
+def demangle(mangled):
+    if mangled.startswith("__1c"):
+        # Looks like a SunPro compiler name
+        ptr = 4;
+        names = [];
+        while True:
+            if ptr > len(mangled)-1: break
+            lengthCharacter = mangled[ptr]
+            if ord(lengthCharacter) > ord("A") and ord(lengthCharacter) <= ord("Z"):
+                symlen = ord(lengthCharacter) - ord('A') + 1;
+                names.append(mangled[ptr+1:ptr+symlen])
+                ptr += symlen
+            else:
+                break
+        return "::".join(names)
+    else:
+        return mangled
+
 # Process a single package (call.* file) and create a package object.
-
-
 def processPackage(packageName, directory):
     global index
     package = { '@id': "id:"+packageName,
@@ -52,7 +69,7 @@ def processPackage(packageName, directory):
         if(m):
             called = m.group(1)
             symbolType = m.group(2)
-            caller = m.group(3)
+            caller = demangle(m.group(3))
 
             # Look up an existing symbol object for the caller, or create one.
             if caller in objectSymbols:
@@ -68,16 +85,15 @@ def processPackage(packageName, directory):
             # A lowercase 'u' means locally undefined. This symbol is defined inside this
             # object, so we have no problem specifying the call destination.
             if symbolType == "u":
-                callDest = packageName+":"+objectName+":"+called
+                callDest = packageName+":"+objectName+":"+demangle(called)
             else:
                 # Otherwise, it's generally undefined, so this would normally be up to the
                 # linker to find the called object. We'll need to look it up in our index.
                 if called not in index:
-                    print("%s not found in the function index"%called, file=sys.stderr)
-                    callDest = "NULL:"+called
+                    callDest = "NULL:"+demangle(called)
                 else:
                     location = index[called]
-                    callDest = location+":"+called
+                    callDest = location+":"+demangle(called)
             callYaml = { '@id': "id:"+callDest }
             symbolYaml['calls'].append("id:"+callDest)
 
