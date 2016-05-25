@@ -51,17 +51,17 @@ database = neo4jrestclient.client.GraphDatabase(args.neo4j)
 
 
 @app.route('/')
-@app.route('/browser')
-@app.route('/browser/')
+@app.route('/group-force-layout')
+@app.route('/group-force-layout/')
 def browser_redirect():
     '''Convenience redirect URLs to the main browser content.'''
-    bottle.redirect('/browser/index.html')
+    bottle.redirect('/force3.html')
 
 
-@app.route('/browser/<path:path>')
+@app.route('/group-force-layout/<path:path>')
 def browser_content(path):
     '''Serve the browser content as static files.'''
-    return bottle.static_file(path, root='browser/')
+    return bottle.static_file(path, root='group-force-layout/')
 
 
 @app.route('/context.jsonld')
@@ -371,18 +371,18 @@ def node_info(node_identifier):
                  urllib.parse.quote_plus(node.properties['compact_uri'])}
         query_string = urllib.parse.urlencode(query)
         return urllib.parse.urlunsplit([
-            scheme, netloc, app.get_url('/browser/') + 'index.html',
+            scheme, netloc, app.get_url('/group-force-layout/') + 'index.html',
             query_string, None])
 
-    def relations_info(node, direction, type):
+    def relations_info(node, direction, relation_type):
         '''Return a little info on some direct relations of this node.'''
         assert direction in ['incoming', 'outgoing']
 
         if direction == 'incoming':
-            relationships = node.relationships.incoming(types=[type])
+            relationships = node.relationships.incoming(types=[relation_type])
         else:
-            relationships = node.relationships.outgoing(types=[type])
-
+            relationships = node.relationships.outgoing(types=[relation_type])
+        print("Found list of relationships for "+repr(node))
         infos = []
         for r in relationships:
             relation = r.end if direction=='outgoing' else r.start
@@ -418,6 +418,7 @@ def node_info(node_identifier):
         'produced_by': relations_info(node, 'incoming', 'sw:produces'),
         'contains': relations_info(node, 'outgoing', 'sw:contains'),
         'contained_by': relations_info(node, 'incoming', 'sw:contains'),
+        'calls': relations_info(node, 'incoming', 'sw:calls'),
     }
 
 

@@ -138,8 +138,23 @@ function expandChildNodes(node: SoftwareNode) : void
     });
 }
 
+function findCalls(node: SoftwareNode) : void
+{
+    var nodeid = "id:"+node.name;
+    $.getJSON('/info/' + nodeid, function (node_info) {
+        console.log("Displaying node: ", node_info);
+    });
+    
+}
+
 function expandOrContractNode(n: number) {
     var node = findNodeByID(n, nodes);
+
+    if(node.type == "symbol") {
+	findCalls(node);
+	return;
+    }
+
     console.log("Expand/contract "+n)
     if(node.expanded) {
 	// Collapse it (remove all child linked nodes)
