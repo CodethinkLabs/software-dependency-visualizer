@@ -110,6 +110,17 @@ function findNodeByID(id : number, nodelist : SoftwareNode[]) : SoftwareNode
     return null;
 }
 
+function findNodeByName(name: string, nodelist : SoftwareNode[]) : SoftwareNode
+{
+    // Horrible search function that should be done with a hash
+    for(var i=0;i<nodelist.length;i++) {
+	console.log(nodelist[i].name + " is not correct");
+	if(nodelist[i].name == name) return nodelist[i];
+    }
+    console.log("No node called "+name+" found in the node list");
+    return null;
+}
+
 
 function expandChildNodes(node: SoftwareNode) : void
 {
@@ -143,8 +154,24 @@ function findCalls(node: SoftwareNode) : void
     var nodeid = "id:"+node.name;
     $.getJSON('/info/' + nodeid, function (node_info) {
         console.log("Displaying node: ", node_info);
+	var callees = []
+	for(var i=0;i<node_info.calls.length;i++) {
+	    var calleeID = node_info.calls[i]['@id'].replace(/^id:/,"");
+	    var n = findNodeByName(calleeID, nodes);
+	    if(n==null) n = new SoftwareNode(node_info.calls[i].name,"symbol");
+	    callees.push(n);
+	}
+
+	for(var i=0;i<callees.length;i++) {
+	    nodes.push(callees[i]);
+	    links.push( new Link(node, callees[i], "calls"));
+	}
+
+	node.expanded = true;
+
+	init();
+	force.start();
     });
-    
 }
 
 function expandOrContractNode(n: number) {
