@@ -210,7 +210,12 @@ function init() {
 	.attr("r", function(d) { return d.size; });
 
     circles.append("text")
-	.text(function(d) { return d.name; })
+	.text(function(d) { var r = d.name.replace(/::/g,"@@");
+			    console.log("Replaced text: "+r);
+			    var i = r.lastIndexOf(":");
+			    var t = d.name.substring(i+1, d.name.length);
+			    console.log("Converting "+d.name+" to "+t);
+			    return  t;})
 	.attr("x", function(d) { return -this.getBBox().width/2; }).attr("y", function(d) { return d.size; });
 
     var delay = 100; // milliseconds
