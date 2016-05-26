@@ -19,6 +19,9 @@
   'requires':
       '@id': 'sw:requires'
       '@type': '@id'
+  'calls':
+      '@id': 'sw:calls'
+      '@type': '@id'
 
   # These 'human-readable' names are not just important here.
   #
@@ -33,5 +36,6 @@
   'Package': 'sw:Package'
   'Repository': 'sw:Repository'
   'Source': 'sw:Source'
-
+  'Object': 'sw:Object'
+  'Symbol': 'sw:Symbol'
   'name': 'https://schema.org/name'
