@@ -8,8 +8,8 @@ var nodes;
 var links;
 var packageColours;
 var force;
-var width = 700;
-var height = 500;
+var width = 1024;
+var height = 768;
 
 var childType = { "package": "object", "object": "symbol" };
 
@@ -110,6 +110,17 @@ function findNodeByID(id : number, nodelist : SoftwareNode[]) : SoftwareNode
     return null;
 }
 
+function findNodeByName(name: string, nodelist : SoftwareNode[]) : SoftwareNode
+{
+    // Horrible search function that should be done with a hash
+    for(var i=0;i<nodelist.length;i++) {
+	console.log(nodelist[i].name + " is not correct");
+	if(nodelist[i].name == name) return nodelist[i];
+    }
+    console.log("No node called "+name+" found in the node list");
+    return null;
+}
+
 
 function expandChildNodes(node: SoftwareNode) : void
 {
@@ -138,8 +149,39 @@ function expandChildNodes(node: SoftwareNode) : void
     });
 }
 
+function findCalls(node: SoftwareNode) : void
+{
+    var nodeid = "id:"+node.name;
+    $.getJSON('/info/' + nodeid, function (node_info) {
+        console.log("Displaying node: ", node_info);
+	var callees = []
+	for(var i=0;i<node_info.calls.length;i++) {
+	    var calleeID = node_info.calls[i]['@id'].replace(/^id:/,"");
+	    var n = findNodeByName(calleeID, nodes);
+	    if(n==null) n = new SoftwareNode(node_info.calls[i].name,"symbol");
+	    callees.push(n);
+	}
+
+	for(var i=0;i<callees.length;i++) {
+	    nodes.push(callees[i]);
+	    links.push( new Link(node, callees[i], "calls"));
+	}
+
+	node.expanded = true;
+
+	init();
+	force.start();
+    });
+}
+
 function expandOrContractNode(n: number) {
     var node = findNodeByID(n, nodes);
+
+    if(node.type == "symbol") {
+	findCalls(node);
+	return;
+    }
+
     console.log("Expand/contract "+n)
     if(node.expanded) {
 	// Collapse it (remove all child linked nodes)
@@ -188,6 +230,22 @@ function init() {
     var svg = d3.select('body').select('svg');
     svg.selectAll("*").remove();
 
+    // This is for SVG arrows, taken from http://www.coppelia.io/2014/07/an-a-to-z-of-extra-features-for-the-d3-force-layout/.
+    svg.append("defs").selectAll("marker")
+        .data(["suit", "licensing", "resolved"])
+	.enter().append("marker")
+        .attr("id", function(d) { return d; })
+        .attr("viewBox", "0 -5 10 10")
+        .attr("refX", 64)
+        .attr("refY", 0)
+        .attr("markerWidth", 6)
+        .attr("markerHeight", 6)
+        .attr("orient", "auto")
+	.append("path")
+        .attr("d", "M0,-5L10,0L0,5 L10,0 L0, -5")
+        .style("stroke", "#4679BD")
+        .style("opacity", "0.6");
+
     // Duplicate all the nodes and links, because d3 changes them in a way we can't yet predict
     // which breaks our model
     var d3nodes = duplicateNodes(nodes);
@@ -218,10 +276,8 @@ function init() {
 
     circles.append("text")
 	.text(function(d) { var r = d.name.replace(/::/g,"@@");
-			    console.log("Replaced text: "+r);
 			    var i = r.lastIndexOf(":");
 			    var t = d.name.substring(i+1, d.name.length);
-			    console.log("Converting "+d.name+" to "+t);
 			    return  t;})
 	.attr("x", function(d) { return -this.getBBox().width/2; }).attr("y", function(d) { return d.size; });
 
@@ -243,7 +299,8 @@ function init() {
             .attr("x1", function(d) { return d.source.x; })
             .attr("y1", function(d) { return d.source.y; })
             .attr("x2", function(d) { return d.target.x; })
-            .attr("y2", function(d) { return d.target.y; });
+            .attr("y2", function(d) { return d.target.y; })
+	    .style("marker-end",  "url(#suit)");
     });
     var dragger = d3.behavior.drag().on("drag", dragFn);
 
