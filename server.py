@@ -55,7 +55,7 @@ database = neo4jrestclient.client.GraphDatabase(args.neo4j)
 @app.route('/group-force-layout/')
 def browser_redirect():
     '''Convenience redirect URLs to the main browser content.'''
-    bottle.redirect('/force3.html')
+    bottle.redirect('/group-force-layout/force3.html')
 
 
 @app.route('/group-force-layout/<path:path>')
