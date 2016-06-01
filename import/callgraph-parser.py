@@ -94,8 +94,8 @@ def processPackage(filename, directory):
                 if called not in index:
                     callDest = "NULL:"+demangle(called)
                 else:
-                    location = index[called]
-                    callDest = location+":"+demangle(called)
+                    packageObjectName = index[called]
+                    callDest = packageObjectName+":"+demangle(called)
             symbolYaml['calls'].append("id:"+callDest)
 
     # Empty 'contains' fields cause problems, so delete them
