@@ -94,7 +94,6 @@ def processPackage(packageName, directory):
                 else:
                     location = index[called]
                     callDest = location+":"+demangle(called)
-            callYaml = { '@id': "id:"+callDest }
             symbolYaml['calls'].append("id:"+callDest)
 
     # Empty 'contains' fields cause problems, so delete them
