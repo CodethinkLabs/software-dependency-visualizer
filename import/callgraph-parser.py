@@ -126,8 +126,8 @@ def main():
     while True:
         l = indexfile.readline()
         if l == "": break
-        (symbol, location) = l.split(":",1)
-        index[symbol]=location.strip()
+        (symbol, objectName, libraryName) = l.split(":")
+        index[symbol]= "%s:%s"%(libraryName.strip(),objectName.strip())
 
     if len(sys.argv) > 1:
         if os.path.isdir(sys.argv[1]):
