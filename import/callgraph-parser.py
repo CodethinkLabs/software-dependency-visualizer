@@ -38,13 +38,15 @@ def demangle(mangled):
         return mangled
 
 # Process a single package (call.* file) and create a package object.
-def processPackage(packageName, directory):
+def processPackage(filename, directory):
     global index
+    packageName = filename
+    if packageName.startswith("calls."): packageName = packageName[6:]
     package = { '@id': "id:"+packageName,
                 '@type': "sw:Package",
                 'name': packageName }
     print("Processing module "+packageName, file=sys.stderr)
-    f = open(packageName, "rt")
+    f = open(filename, "rt")
     objectName = "unknown object"
     objectSymbols = None
     objectYaml = None
@@ -92,41 +94,48 @@ def processPackage(packageName, directory):
                 if called not in index:
                     callDest = "NULL:"+demangle(called)
                 else:
-                    location = index[called]
-                    callDest = location+":"+demangle(called)
-            callYaml = { '@id': "id:"+callDest }
+                    packageObjectName = index[called]
+                    callDest = packageObjectName+":"+demangle(called)
             symbolYaml['calls'].append("id:"+callDest)
 
     # Empty 'contains' fields cause problems, so delete them
     if package['contains'] == []: del package['contains']
     return package
 
+def scanFile(directory, filename):
+    package = processPackage(filename, os.path.join(directory, filename))
+    of = open(filename+".yaml", "wt")
+    of.write(yaml.dump({ "@context": ["http://localhost:8000/context.jsonld"],
+                         "@graph": package }))
+    of.close()
+
+def scanDirectory(directory):
+    print("Scanning %s"%directory, file=sys.stderr)
+
+    files = os.listdir(directory)
+    for f in files:
+        if f.startswith("calls.") and not f.endswith(".yaml"):
+            scanFile(directory, f)
+
+
 def main():
     global index
-    if len(sys.argv) > 1:
-        scanDirectory = sys.argv[1]
-    else:
-        scanDirectory = "."
-
     # Load the symbol directory
     indexfile = open("alldefs_sorted_uniq")
     index = {}
     while True:
         l = indexfile.readline()
         if l == "": break
-        (symbol, location) = l.split(":",1)
-        index[symbol]=location.strip()
+        (symbol, objectName, libraryName) = l.split(":")
+        index[symbol]= "%s:%s"%(libraryName.strip(),objectName.strip())
 
-    print("Scanning %s"%scanDirectory, file=sys.stderr)
-
-    files = os.listdir(scanDirectory)
-    for f in files:
-        if f.startswith("calls.") and not f.endswith(".yaml"):
-            package = processPackage(f, os.path.join(scanDirectory, f))
-            of = open(f+".yaml", "wt")
-            of.write(yaml.dump({ "@context": ["http://localhost:8000/context.jsonld"],
-                          "@graph": package }))
-            of.close()
+    if len(sys.argv) > 1:
+        if os.path.isdir(sys.argv[1]):
+            scanDirectory(sys.argv[1])
+        else:
+            scanFile(".",sys.argv[1])
+    else:
+        scanDirectory(".")
 
 if __name__=="__main__":
     main()
