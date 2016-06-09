@@ -27,8 +27,9 @@ var exampleCalls = [
     { source: [0,"",""], target: [12, "",""] },
 ];
 
-packageName= "libhfr";
-
+var d3;
+var $;
+var packageName : string = "libhfr";
 var nodeid = "id:calls."+packageName;
 
 
@@ -40,16 +41,18 @@ function database()
 	console.log("Displaying node: ", node_info);
 	var pack = node_info.nodes[0];
 	console.log("Package returned: "+pack.caption);
-	
 	for(var o=0;o<pack.contains.nodes.length;o++) {
 	    var object = pack.contains.nodes[o];
 	    console.log("Recording object "+object.caption);
-	    allNodes = {}
+	    var allNodes = {}
 	    for (var s=0;s<object.contains.nodes.length;s++) {
 		var node = object.contains.nodes[s];
+		if(node.caption == "") {
+		    console.log("Loaded object with no caption! id: "+node._id);
+		}
+		    
 		json1.push( { "Object": node.caption.substr(0,4), "parent": node.caption.substr(0,4), "value": 0, "_id": node._id});
 		allNodes[node._id] = true;
-		
 	    }
 	    for (var e=0;e<object.contains.edges.length;e++) {
 		var edge = object.contains.edges[e];
@@ -57,28 +60,44 @@ function database()
 		    callGraph.push( { source: [edge._source, "", ""], target: [edge._target, "", ""] } );
 		}
 	    }
-	    
-	    
 	}
 	graph.data(json1, callGraph);
-	
     });
 }
 
-blockSize = 64;
+var blockSize : number = 64;
 
-function nodeXFunction (obj) { if(obj && obj.index) return 32 + ((obj.index - 1) * blockSize);
-			       console.log("Object: "+obj+" has no index"); return 0; }
+function nodeXFunction (obj) {
+    if(obj==null) return 0;
+    if(obj.index)
+    {
+	return 32 + ((obj.index - 1) * blockSize);
+    } else {
+	console.log("Object: '"+obj.Object+"' has no index");
+	return 0;
+    }
+}
+
 function nodeYFunction (obj) {
     if(obj===null) {
 	return 0;
     }
-    var y = (obj.row - 1) * blockSize;
-    return y; }
+    if(obj.row) {
+	var y = (obj.row - 1) * blockSize;
+	return y;
+    } else {
+	console.log("Object has no row");
+	return 0;
+    }
+}
 
 function nodeTranslationFunction (obj) { var x = nodeXFunction(obj);
 					 var y = nodeYFunction(obj);
 					 return "translate ("+x+" "+y+")"; }
+
+function noop() : void
+{   
+}
 
 function nodeDrawCallback(_this, thing)
 {
@@ -125,17 +144,7 @@ var graph = initGraph();
 
 var interval = null;
 
-function data1() {
-    if (interval != null) {
-        clearInterval(interval);
-    }
-    graph.data(json1);
-    document.querySelector('h1').innerHTML = 'Package View';
-}
-
-
 document.querySelector('h1').innerHTML = packageName;
-
 
 // Thing to add all the callers
 var data = [ "A", "B", "C", "D" ];

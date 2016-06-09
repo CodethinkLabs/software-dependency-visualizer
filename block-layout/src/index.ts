@@ -30,6 +30,9 @@
  * @param {object} root The window object.
  * @param {object} factory The factory object.
  */
+
+var define, exports, require, module;
+
 (function(root, factory) {  // jshint ignore:line
     'use strict';
 
