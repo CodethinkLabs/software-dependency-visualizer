@@ -31,6 +31,7 @@ neo4jrestclient.client.Relationship.__hash__ = lambda self: hash(self.id)
 
 
 DEFAULT_NEO4J = 'http://neo4j:insecure@localhost:7474/db/data'
+DEFAULT_PORT = '8080'
 
 
 def argument_parser():
@@ -39,6 +40,9 @@ def argument_parser():
     parser.add_argument('--neo4j', '-n', metavar='URL',
                         default=DEFAULT_NEO4J,
                         help="Neo4J database (default: %s)" % DEFAULT_NEO4J)
+    parser.add_argument('--port', '-p', metavar='PORT',
+                        default=DEFAULT_PORT,
+                        help="Port to use (default: %s)" % DEFAULT_PORT)
 
     return parser
 
@@ -441,4 +445,4 @@ def node_info(node_identifier):
 #node_number = graph_node_number("id:package/source/libgtk")
 #print(graph_present(node_number))
 
-app.run()
+app.run(port=args.port)
