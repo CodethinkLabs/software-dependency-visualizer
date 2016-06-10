@@ -447,7 +447,7 @@ var define, exports, require, module;
      * @param json {Array} The array of JSON to feed to the graph.
      * @return {RelationshipGraph} The RelationshipGraph object to keep d3's chaining functionality.
      */
-    RelationshipGraph.prototype.data = function(json, callGraph) {
+    RelationshipGraph.prototype.data = function(json, callGraph, objectCallGraph) {
         if (this.verifyJson(json)) {
             var row,
                 parents = [],

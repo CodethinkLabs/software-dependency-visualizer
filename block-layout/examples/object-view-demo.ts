@@ -32,12 +32,29 @@ var $;
 var packageName : string = "libhfr";
 var nodeid = "id:"+packageName;
 
+// Add the item to the set unless it's there already, and
+// return the new set. The original is also modified, unless
+// it's null or undefined.
+
+function addToSet<T>(set : T[], item : T) : T[]
+{
+    if(set == null || set === undefined) {
+	set = [];
+    }
+    for(var i:number=0;i<set.length;i++) {
+	if(set[i] == item) return set;
+    }
+    set.push(item);
+    return set;
+}
 
 function database()
 {
     $.getJSON('/graph/present/' + nodeid, function (node_info) {
 	var json1 = [];
 	var callGraph = [];
+	var objectCallGraph = {};
+	var nodeToObjectMap = {};
 	console.log("Displaying node: ", node_info);
 	var pack = node_info.nodes[0];
 	console.log("Package returned: "+pack.caption);
@@ -52,16 +69,34 @@ function database()
 		}
 		json1.push( { "Object": node.caption.substr(0,4), "parent": object.caption.substr(0,4), "value": 0, "_id": node._id});
 		allNodes[node._id] = true;
+		nodeToObjectMap[node._id] = object;
 	    }
 	    for (var e=0;e<object.contains.edges.length;e++) {
 		var edge = object.contains.edges[e];
 		if(allNodes[edge._source] == true && allNodes[edge._target] == true) {
 		    callGraph.push( { source: [edge._source, "", ""], target: [edge._target, "", ""] } );
+		    var callerPackage : number = nodeToObjectMap[edge._source]._id;
+		    var calledPackage : number = nodeToObjectMap[edge._target]._id;
+		    if(callerPackage != calledPackage) {
+			console.log("Mapping call source "+edge._source+" to object "+callerPackage+" and target "+edge._target+" to object "+calledPackage);
+			objectCallGraph[callerPackage] = addToSet(objectCallGraph[callerPackage],calledPackage);
+		    }
 		}
 	    }
 	}
+
+	// Convert the set-map thing into an array of pairs
+	var objectCalls = [];
+	Object.keys(objectCallGraph).forEach(function (key) {
+	    var callingObject = key;
+	    var callers = objectCallGraph[key];
+	    callers.forEach(function (value) {
+		objectCalls.push([callingObject, value]);
+	    });
+	});
+	console.log("Produced object call graph: ", objectCalls);
 	graph = initGraph();
-	graph.data(json1, callGraph);
+	graph.data(json1, callGraph, objectCalls);
     });
 }
 
