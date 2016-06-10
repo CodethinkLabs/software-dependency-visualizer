@@ -50,7 +50,7 @@ function database()
 		if(node.caption == "") {
 		    console.log("Loaded object with no caption! id: "+node._id);
 		}
-		json1.push( { "Object": node.caption.substr(0,4), "parent": node.caption.substr(0,4), "value": 0, "_id": node._id});
+		json1.push( { "Object": node.caption.substr(0,4), "parent": object.caption.substr(0,4), "value": 0, "_id": node._id});
 		allNodes[node._id] = true;
 	    }
 	    for (var e=0;e<object.contains.edges.length;e++) {
