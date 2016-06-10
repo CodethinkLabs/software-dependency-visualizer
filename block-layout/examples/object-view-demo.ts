@@ -144,7 +144,8 @@ var graph = initGraph();
 
 var interval = null;
 
-document.querySelector('h1').innerHTML = packageName;
+let title = <HTMLElement> document.querySelector('h1')
+title.innerHTML = packageName;
 
 // Thing to add all the callers
 var data = [ "A", "B", "C", "D" ];
