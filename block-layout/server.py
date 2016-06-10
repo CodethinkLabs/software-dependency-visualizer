@@ -54,7 +54,7 @@ database = neo4jrestclient.client.GraphDatabase(args.neo4j)
 @app.route('/examples/')
 def browser_redirect():
     '''Convenience redirect URLs to the main browser content.'''
-    bottle.redirect('/index.html')
+    bottle.redirect('/examples/index.html')
 
 
 @app.route('/examples/<path:path>')
