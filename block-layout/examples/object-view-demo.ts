@@ -30,7 +30,7 @@ var exampleCalls = [
 var d3;
 var $;
 var packageName : string = "libhfr";
-var nodeid = "id:calls."+packageName;
+var nodeid = "id:"+packageName;
 
 
 function database()
