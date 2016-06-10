@@ -200,19 +200,17 @@ var define, exports, require, module;
             this.tip = null;
         }
 
-        // Check if this selection already has a graph.
-        this.svg = this.config.selection.select('svg').select('g');
+        // Remove the previous SVG
+	this.config.selection.select('svg').remove();
 
-        if (this.svg.empty()) {
-            // Create the svg element that will contain the graph.
-            this.svg = this.config.selection
-                .append('svg')
-                .attr('width', '500')
-                .attr('height', '500')
-                .attr('style', 'display: block')
-                .append('g')
-                .attr('transform', 'translate(10, 0)');
-        }
+        // Create the svg element that will contain the graph.
+        this.svg = this.config.selection
+            .append('svg')
+            .attr('width', '500')
+            .attr('height', '500')
+            .attr('style', 'display: block')
+            .append('g')
+            .attr('transform', 'translate(10, 0)');
 
         this.graph = this;
     };

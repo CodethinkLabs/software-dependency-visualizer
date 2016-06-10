@@ -60,6 +60,7 @@ function database()
 		}
 	    }
 	}
+	graph = initGraph();
 	graph.data(json1, callGraph);
     });
 }
