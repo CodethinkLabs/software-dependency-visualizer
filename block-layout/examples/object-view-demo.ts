@@ -35,7 +35,7 @@ var nodeid = "id:calls."+packageName;
 
 function database()
 {
-    $.getJSON('http://localhost:8080/graph/present/' + nodeid, function (node_info) {
+    $.getJSON('/graph/present/' + nodeid, function (node_info) {
 	var json1 = [];
 	var callGraph = [];
 	console.log("Displaying node: ", node_info);
