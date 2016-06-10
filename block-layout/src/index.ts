@@ -55,7 +55,7 @@ var define, exports, require, module;
      * Add a relationshipGraph function to d3 that returns a RelationshipGraph object.
      */
     d3.relationshipGraph = function() {
-        return RelationshipGraph.extend.apply(RelationshipGraph, arguments);
+        return RelationshipGraph.apply(RelationshipGraph, arguments);
     };
 
     /**
