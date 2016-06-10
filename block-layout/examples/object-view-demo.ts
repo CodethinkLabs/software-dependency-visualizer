@@ -50,7 +50,6 @@ function database()
 		if(node.caption == "") {
 		    console.log("Loaded object with no caption! id: "+node._id);
 		}
-		    
 		json1.push( { "Object": node.caption.substr(0,4), "parent": node.caption.substr(0,4), "value": 0, "_id": node._id});
 		allNodes[node._id] = true;
 	    }
@@ -83,7 +82,7 @@ function nodeYFunction (obj) {
 	return 0;
     }
     if(obj.row) {
-	var y = (obj.row - 1) * blockSize;
+	var y = (obj.row - 1) * blockSize + (16*obj.objectNo)-12;
 	return y;
     } else {
 	console.log("Object has no row");
@@ -96,7 +95,7 @@ function nodeTranslationFunction (obj) { var x = nodeXFunction(obj);
 					 return "translate ("+x+" "+y+")"; }
 
 function noop() : void
-{   
+{
 }
 
 function nodeDrawCallback(_this, thing)

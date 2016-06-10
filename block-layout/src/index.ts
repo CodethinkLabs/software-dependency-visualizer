@@ -301,7 +301,8 @@ var define, exports, require, module;
             i,
             index = 0,
             row = 0,
-            previousParent = '';
+            previousParent = '',
+	    objectNo : number = 0;
 
         for (i = 0; i < parents.length; i++) {
             var current = parents[i] + ' ( ' + parentSizes[parentNames[i]] + ') ';
@@ -324,16 +325,19 @@ var define, exports, require, module;
 
             if (previousParent !== null && previousParent !== parent) {
                 element.row = row + 1;
+		element.objectNo = objectNo + 1;
                 element.index = 1;
 
                 index = 2;
                 row++;
+		objectNo++;
             } else {
                 if (index === calculatedMaxChildren + 1) {
                     index = 1;
                     row++;
                 }
 
+                element.objectNo = objectNo;
                 element.row = row;
                 element.index = index;
 
@@ -490,45 +494,40 @@ var define, exports, require, module;
             var parentNodes = this.svg.selectAll('.relationshipGraph-Text')
                 .data(parents);
 
-	    function parentTextXFunction(obj,index) {
-                var width = _this.ctx.measureText(obj + ' (' + parentSizes[Object.keys(parentSizes)[index]] + ')');
-                return longestWidth - width.width;
-	    }
-
-	    function parentTextYFunction(obj, index) {
-		if (index === 0 || index === "undefined") {
+	    function parentBoxYFunction(obj, index) {
+		var objectSpacing:number = 16;
+		if (index == 0 || index === "undefined") {
 		    return 0;
                 }
                 // Determine the Y coordinate by determining the Y coordinate of all of the parents before. This has to be calculated completely
                 // because it is an update and can occur anywhere.
                 var previousParentSize = 0,
                     i = index - 1;
-
                 while (i > -1) {
 		    var key = Object.keys(parentSizes)[i];
 		    if(key) {
-                        previousParentSize += Math.ceil(parentSizes[key] / calculatedMaxChildren) * calculatedMaxChildren;
+                        previousParentSize += Math.ceil(parentSizes[key] / calculatedMaxChildren);
 		    }
                     i--;
                 }
 
-		var y =  Math.ceil(previousParentSize / calculatedMaxChildren) * _this.config.blockSize;
+		var y =  Math.ceil(previousParentSize) * _this.config.blockSize + (index * objectSpacing);
 		return y;
 	    }
 
 	    function parentBoxHeightFunction(obj, index) {
                 var children = Math.ceil(parentSizes[Object.keys(parentSizes)[index]] / calculatedMaxChildren) * calculatedMaxChildren;
-                return Math.ceil(children / calculatedMaxChildren) * _this.config.blockSize;
+                return 8 + Math.ceil(children / calculatedMaxChildren) * _this.config.blockSize;
 	    }
-
+	    function parentTextFunction(obj, index) {
+                return obj + ' (' + parentSizes[Object.keys(parentSizes)[index]] + ')';
+	    }
 	    // Add new parent nodes.
             var parentGroups = parentNodes.enter().append('g');
 	    parentGroups.append('text')
-                .text(function(obj, index) {
-                    return obj + ' (' + parentSizes[Object.keys(parentSizes)[index]] + ')';
-                })
-                .attr('x', parentTextXFunction)
-                .attr('y', parentTextYFunction)
+                .text(parentTextFunction)
+                .attr('x', 8)
+                .attr('y', parentBoxYFunction)
                 .style('text-anchor', 'start')
                 .style('fill', function(obj) {
                     return (obj.parentColor !== undefined) ? _this.config.colors[obj.parentColor] : '#000000';
@@ -536,10 +535,11 @@ var define, exports, require, module;
                 .attr('class', 'relationshipGraph-Text')
                 .attr('transform', 'translate(-6, ' + this.config.blockSize / 1.5 + ')');
 
+	    // Add a rectangle which should enclose all objects
 	    parentGroups.append('rect')
-	        .attr('x', parentTextXFunction)
-	        .attr('y', parentTextYFunction)
-	        .attr('width', 64)
+	        .attr('x', 0)
+	        .attr('y', parentBoxYFunction)
+	        .attr('width', 64+(_this.config.blockSize*_this.config.maxChildCount))
 	        .attr('height', parentBoxHeightFunction)
 	        .attr('class', 'relationshipGraph-ParentBox')
 	        .attr('fill', 'none')
@@ -547,11 +547,9 @@ var define, exports, require, module;
 
             // Update existing parent nodes.
             parentNodes.select('text')
-                .text(function(obj, index) {
-                    return obj + ' (' + parentSizes[Object.keys(parentSizes)[index]] + ')';
-                })
-	        .attr('x', parentTextXFunction)
-                .attr('y', parentTextYFunction)
+                .text(parentTextFunction)
+                .attr('x', 8)
+                .attr('y', parentBoxYFunction)
                 .style('fill', function(obj) {
                     return (obj.parentColor !== undefined) ? _this.config.colors[obj.parentColor] : '#000000';
                 });
@@ -594,10 +592,6 @@ var define, exports, require, module;
 	    function configureLinePositions(selection)
 	    {
 		selection
-		    /*.attr('x1', function(obj) { var source = lookUpNodeById(obj.source[0]); return nodeXFunction(source) + 64; })
-		    .attr('y1', function(obj) { var source = lookUpNodeById(obj.source[0]); return nodeYFunction(source) + 32; })
-		    .attr('x2', function(obj) { var target = lookUpNodeById(obj.target[0]); return nodeXFunction(target) + 64; })
-	            .attr('y2', function(obj) { var target = lookUpNodeById(obj.target[0]); return nodeYFunction(target) + 32; })*/
 		    .attr('d', function(obj) {
 			var source = lookUpNodeById(obj.source[0]);
 			var target = lookUpNodeById(obj.target[0]);
@@ -624,7 +618,7 @@ var define, exports, require, module;
             // Update existing child nodes.
             childrenNodes.transition(_this.config.transitionTime)
 		.attr( "transform", function(obj) { var x = longestWidth + ((obj.index - 1) * _this.config.blockSize);
-					            var y = (obj.row - 1) * _this.config.blockSize;
+					            var y = nodeYFunction(obj);
 						    return "translate ("+x+" "+y+")"; })
                 .style('fill', function(obj) {
                     return _this.config.colors[obj.color % _this.config.colors.length] || _this.config.colors[0];
