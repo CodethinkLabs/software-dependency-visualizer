@@ -487,7 +487,7 @@ var define, exports, require, module;
             row = calculatedResults.maxRow;
 
             // Set the max width and height.
-            maxHeight = row * this.config.blockSize;
+            maxHeight = row * this.config.blockSize + parents.length*16;
             maxWidth = longestWidth + (calculatedMaxChildren * this.config.blockSize);
 
             // Select all of the parent nodes.
@@ -539,7 +539,7 @@ var define, exports, require, module;
 	    parentGroups.append('rect')
 	        .attr('x', 0)
 	        .attr('y', parentBoxYFunction)
-	        .attr('width', 64+(_this.config.blockSize*_this.config.maxChildCount))
+	        .attr('width', 80 + (_this.config.blockSize*_this.config.maxChildCount))
 	        .attr('height', parentBoxHeightFunction)
 	        .attr('class', 'relationshipGraph-ParentBox')
 	        .attr('fill', 'none')
