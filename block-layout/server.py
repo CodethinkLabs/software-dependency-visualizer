@@ -332,6 +332,27 @@ def graph_present(root_node_identifier):
                       children)
         return encode_as_graphjson(nodes, edges, children)
 
+    def find_parent(child_node, config, depth=0):
+        if depth >= config.max_depth:
+            return {}
+
+        logging.debug("Finding parent of %s" % node_name(child_node))
+
+        parent_nodes = traverse_nodes(child_node, stop=1,
+                                     direction=neo4jrestclient.client.Incoming,
+                                     types=['sw:contains'])
+
+        # We now traverse from each child node in turn, to find all siblings
+        # at this depth. This is pretty wasteful! It would be better to do
+        # a single traverse operation that started from all child nodes at
+        # once. That can't be done with the Neo4j REST API, though, we'd need
+        # to write a Java plugin (or perhaps use the Gremlin query language).
+
+        if len(parent_nodes)==0:
+            logging.error("There is no parent for node %d!"%(child_node.id))
+            return None
+        return parent_nodes[0].id
+
     def encode_as_graphjson(node_list, edge_list, node_children, config=None):
         '''Structure traverse results as GraphJSON, suitable for clients.'''
         nodes_graphjson = []
@@ -342,7 +363,9 @@ def graph_present(root_node_identifier):
             info = encode_node(node, contents)
             if config and node == config.root_node:
                 info['root'] = True
-            nodes_graphjson.append(info)
+            # At this point we could not append it if the node doesn't belong to this child
+            #info['parent'] = find_parent(node, config)
+            print("Adding "+repr(info))
 
         for edge in edge_list: # Never used!
             edges_graphjson.append(encode_relationship(edge))

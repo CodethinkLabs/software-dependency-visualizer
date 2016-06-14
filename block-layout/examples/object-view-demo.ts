@@ -69,17 +69,24 @@ function database()
 		}
 		json1.push( { "Object": node.caption.substr(0,4), "parent": object.caption.substr(0,4), "value": 0, "_id": node._id});
 		allNodes[node._id] = true;
+		console.log("Recording map of symbol "+node._id+" to object "+object._id);
+		if(nodeToObjectMap[node._id]) {
+		    console.log("Warning: symbol "+node._id+" was already mapped to "+nodeToObjectMap[node._id]._id);
+		}
 		nodeToObjectMap[node._id] = object;
 	    }
+	}
+	for(var o=0;o<pack.contains.nodes.length;o++) {
+	    var object = pack.contains.nodes[o];
 	    for (var e=0;e<object.contains.edges.length;e++) {
 		var edge = object.contains.edges[e];
 		if(allNodes[edge._source] == true && allNodes[edge._target] == true) {
 		    callGraph.push( { source: [edge._source, "", ""], target: [edge._target, "", ""] } );
-		    var callerPackage : number = nodeToObjectMap[edge._source]._id;
-		    var calledPackage : number = nodeToObjectMap[edge._target]._id;
-		    if(callerPackage != calledPackage) {
-			console.log("Mapping call source "+edge._source+" to object "+callerPackage+" and target "+edge._target+" to object "+calledPackage);
-			objectCallGraph[callerPackage] = addToSet(objectCallGraph[callerPackage],calledPackage);
+		    var callerObject : number = nodeToObjectMap[edge._source]._id;
+		    var calledObject : number = nodeToObjectMap[edge._target]._id;
+		    console.log("Mapping call source "+edge._source+" to object "+callerObject+" and target "+edge._target+" to object "+calledObject);
+		    if(callerObject != calledObject) {
+			objectCallGraph[callerObject] = addToSet(objectCallGraph[callerObject],calledObject);
 		    }
 		}
 	    }
