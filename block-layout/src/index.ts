@@ -353,7 +353,7 @@ var define, exports, require, module;
                     compare;
 
                 if (typeof that.config.thresholds[0] === 'string') {
-                    value = element.value;
+                    value = element.sortIndex;
 
                     /**
                      * Compare the values to see if they're equal.
@@ -370,7 +370,7 @@ var define, exports, require, module;
                         return value.toLowerCase() == threshold.toLowerCase();
                     };
                 } else {
-                    value = (typeof element.value == 'number') ? element.value : parseInt(element.value.replace(/\D/g, ''));
+                    value = (typeof element.sortIndex == 'number') ? element.sortIndex : parseInt(element.sortIndex.replace(/\D/g, ''));
 
                     /**
                      * Compare the values to see if the value is less than the threshold.
