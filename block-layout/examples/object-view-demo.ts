@@ -67,13 +67,19 @@ function database()
 		if(node.caption == "") {
 		    console.log("Loaded object with no caption! id: "+node._id);
 		}
-		json1.push( { "Object": node.caption.substr(0,4), "parent": object.caption.substr(0,4), "value": 0, "_id": node._id});
-		allNodes[node._id] = true;
-		console.log("Recording map of symbol "+node._id+" to object "+object._id);
-		if(nodeToObjectMap[node._id]) {
-		    console.log("Warning: symbol "+node._id+" was already mapped to "+nodeToObjectMap[node._id]._id);
+		if(node.parent) { // Nodes without parents are external symbols, which are ignored at the moment.
+		    if(node.parent != object._id) {
+			console.log("Symbol "+node._id+ " is in the wrong parent and will not be recorded (symbol parent "+node.parent+", object id "+object._id);
+		    } else {
+			json1.push( { "Object": node.caption.substr(0,4), "parent": object.caption.substr(0,4), "value": 0, "_id": node._id});
+			console.log("Recording map of symbol "+node._id+" to object "+object._id)
+			if(nodeToObjectMap[node._id]) {
+			    console.log("Warning: symbol "+node._id+" was already mapped to "+nodeToObjectMap[node._id]._id);
+			}
+			nodeToObjectMap[node._id] = object;
+		    }
+		    allNodes[node._id] = true;
 		}
-		nodeToObjectMap[node._id] = object;
 	    }
 	}
 	for(var o=0;o<pack.contains.nodes.length;o++) {

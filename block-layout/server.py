@@ -332,9 +332,9 @@ def graph_present(root_node_identifier):
                       children)
         return encode_as_graphjson(nodes, edges, children)
 
-    def find_parent(child_node, config, depth=0):
-        if depth >= config.max_depth:
-            return {}
+    def find_parent(child_node, depth=0):
+        if depth >= 1:
+            return None
 
         logging.debug("Finding parent of %s" % node_name(child_node))
 
@@ -364,8 +364,9 @@ def graph_present(root_node_identifier):
             if config and node == config.root_node:
                 info['root'] = True
             # At this point we could not append it if the node doesn't belong to this child
-            #info['parent'] = find_parent(node, config)
+            info['parent'] = find_parent(node)
             print("Adding "+repr(info))
+            nodes_graphjson.append(info)
 
         for edge in edge_list: # Never used!
             edges_graphjson.append(encode_relationship(edge))
