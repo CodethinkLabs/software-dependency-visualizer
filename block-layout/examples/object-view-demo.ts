@@ -213,8 +213,11 @@ function nodeDrawCallback(_this, thing)
         .attr('ry', 4)
         .attr('width', _this.config.blockSize)
         .attr('height', _this.config.blockSize)
-        .style('fill', function(obj) {
-            return _this.config.colors[obj.color % _this.config.colors.length] || _this.config.colors[0];
+        .style('fill', function(obj : D3Symbol) {
+	    if(obj.highlight) {
+		return "#ffff00";
+	    }
+	    return "#7f7f7f";
         })
         .attr('class', 'relationshipGraph-block')
         .on('mouseover', _this.tip ? _this.tip.show : noop)
