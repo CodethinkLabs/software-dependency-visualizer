@@ -16,15 +16,15 @@ var exampleJSON = [
 ];
 
 var exampleCalls = [
-    { source: [0,"",""], target: [4, "",""] },
-    { source: [2,"",""], target: [5, "",""] },
-    { source: [7,"",""], target: [7, "",""] },
-    { source: [5,"",""], target: [10, "",""] },
-    { source: [1,"",""], target: [2, "",""] },
-    { source: [2,"",""], target: [5, "",""] },
-    { source: [12,"",""], target: [1, "",""] },
-    { source: [13,"",""], target: [13, "",""] },
-    { source: [0,"",""], target: [12, "",""] },
+    { source: 0, target: 4 },
+    { source: 2, target: 5 },
+    { source: 7, target: 7 },
+    { source: 5, target: 10 },
+    { source: 1, target: 2 },
+    { source: 2, target: 5 },
+    { source: 12, target: 1 },
+    { source: 13, target: 13 },
+    { source: 0, target: 12 },
 ];
 
 var d3;
@@ -87,7 +87,7 @@ function database()
 	    for (var e=0;e<object.contains.edges.length;e++) {
 		var edge = object.contains.edges[e];
 		if(allNodes[edge._source] == true && allNodes[edge._target] == true) {
-		    callGraph.push( { source: [edge._source, "", ""], target: [edge._target, "", ""] } );
+		    callGraph.push( { source: edge._source, target: edge._target } );
 		    var callerObject : number = nodeToObjectMap[edge._source]._id;
 		    var calledObject : number = nodeToObjectMap[edge._target]._id;
 		    console.log("Mapping call source "+edge._source+" to object "+callerObject+" and target "+edge._target+" to object "+calledObject);
