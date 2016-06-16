@@ -88,13 +88,20 @@ function addToSet<T>(set : T[], item : T) : T[]
     return set;
 }
 
+var symbolArray : D3Symbol[] = [];
+var callGraph : Call[] = [];
+var objectCalls = [];
+
 function database()
 {
     // This function fetches JSON from the graph database intermediate server (server.py)
     // and reformats the data into a form acceptable to D3.
+    symbolArray = [];
+    callGraph = [];
+    objectCalls = [];
+
     $.getJSON('/graph/present/' + nodeid, function (node_info) {
-	var json1 : D3Symbol[] = [];
-	var callGraph : Call[] = [];
+
 	var objectCallGraph : { [id: number]: number[] } = {};
 	var nodeToObjectMap : { [id: number]: GraphDBNode } = {};
 	console.log("Displaying node: ", node_info);
@@ -141,7 +148,6 @@ function database()
 	}
 
 	// Convert the set-map thing into an array of pairs
-	var objectCalls = [];
 	Object.keys(objectCallGraph).forEach(function (key) {
 	    var callingObject = key;
 	    var callers = objectCallGraph[key];
@@ -149,10 +155,18 @@ function database()
 		objectCalls.push([callingObject, value]);
 	    });
 	});
+
 	console.log("Produced object call graph: ", objectCalls);
 	graph = initGraph();
-	graph.data(json1, callGraph, objectCalls);
+	graph.data(symbolArray, callGraph, objectCalls);
     });
+}
+
+function update()
+{
+    graph = initGraph();
+    console.log("Updating graph with ",symbolArray, callGraph);
+    graph.data(symbolArray, callGraph);
 }
 
 var blockSize : number = 64;
@@ -215,6 +229,20 @@ function nodeDrawCallback(_this, thing)
 
 }
 
+function symbolClickCallback(n)
+{
+    console.log("Click",n);
+    for(var s:number=0;s<symbolArray.length;s++) {
+	if(symbolArray[s]._id == n._id) {
+	    symbolArray[s].highlight = true;
+	    console.log("Updating node with id "+n._id);
+	} else {
+	    symbolArray[s].highlight = false;
+	}
+    }
+    update();
+}
+
 function initGraph()
 {
     return d3.select('#graph').relationshipGraph({
@@ -223,9 +251,8 @@ function initGraph()
 	'showKeys': false,
 	'blockSize': 32,
 	'nodeDrawCallback': nodeDrawCallback,
+	'onClick': symbolClickCallback,
 	'thresholds': [1, 2, 3], // This is the threshold used for each colour
-	onClick: function(obj) { // This is called when a symbol is clicked
-	},
 	colors: ['red', 'green', 'blue'],
     });
 }
@@ -274,5 +301,8 @@ setPackageLabelTextAttributes(group.append("text"));
 
 function example() {
     graph = initGraph();
-    graph.data(exampleJSON, exampleCalls);
+    symbolArray = exampleJSON;
+    callGraph = exampleCalls;
+    graph.data(symbolArray, callGraph);
+
 }
