@@ -15,7 +15,36 @@ var exampleJSON = [
     { "Object": "Sym4", "parent": "klf.o", "value": 2, "_id": 13 },
 ];
 
-var exampleCalls = [
+class Call {
+    source: number
+    target: number
+}
+
+// Symbols which D3 expects in an array.
+class D3Symbol {
+    Object: string;
+    parent: string;
+    _id: number;
+    value: number;
+}
+
+// This is the contents of a 'contains' relationship.
+class Container {
+    nodes: GraphDBNode[]
+    edges: GraphDBNode[]
+}
+
+// All nodes returned by the graph database fit this pattern.
+class GraphDBNode {
+    caption: string;
+    parent: number;
+    _id: number;
+    contains: Container;
+    _source: number;
+    _target: number;
+}
+
+var exampleCalls : Call[] = [
     { source: 0, target: 4 },
     { source: 2, target: 5 },
     { source: 7, target: 7 },
@@ -51,19 +80,19 @@ function addToSet<T>(set : T[], item : T) : T[]
 function database()
 {
     $.getJSON('/graph/present/' + nodeid, function (node_info) {
-	var json1 = [];
-	var callGraph = [];
+	var json1 : D3Symbol[] = [];
+	var callGraph : Call[] = [];
 	var objectCallGraph = {};
 	var nodeToObjectMap = {};
 	console.log("Displaying node: ", node_info);
-	var pack = node_info.nodes[0];
+	var pack : GraphDBNode = node_info.nodes[0];
 	console.log("Package returned: "+pack.caption);
 	for(var o=0;o<pack.contains.nodes.length;o++) {
-	    var object = pack.contains.nodes[o];
+	    var object : GraphDBNode = pack.contains.nodes[o];
 	    console.log("Recording object "+object.caption);
 	    var allNodes = {}
 	    for (var s=0;s<object.contains.nodes.length;s++) {
-		var node = object.contains.nodes[s];
+		var node : GraphDBNode = object.contains.nodes[s];
 		if(node.caption == "") {
 		    console.log("Loaded object with no caption! id: "+node._id);
 		}
