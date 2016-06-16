@@ -15,16 +15,45 @@ var exampleJSON = [
     { "Object": "Sym4", "parent": "klf.o", "value": 2, "_id": 13 },
 ];
 
-var exampleCalls = [
-    { source: [0,"",""], target: [4, "",""] },
-    { source: [2,"",""], target: [5, "",""] },
-    { source: [7,"",""], target: [7, "",""] },
-    { source: [5,"",""], target: [10, "",""] },
-    { source: [1,"",""], target: [2, "",""] },
-    { source: [2,"",""], target: [5, "",""] },
-    { source: [12,"",""], target: [1, "",""] },
-    { source: [13,"",""], target: [13, "",""] },
-    { source: [0,"",""], target: [12, "",""] },
+class Call {
+    source: number
+    target: number
+}
+
+// Symbols which D3 expects in an array.
+class D3Symbol {
+    Object: string;
+    parent: string;
+    _id: number;
+    value: number;
+}
+
+// This is the contents of a 'contains' relationship.
+class Container {
+    nodes: GraphDBNode[]
+    edges: GraphDBNode[]
+}
+
+// All nodes returned by the graph database fit this pattern.
+class GraphDBNode {
+    caption: string;
+    parent: number;
+    _id: number;
+    contains: Container;
+    _source: number;
+    _target: number;
+}
+
+var exampleCalls : Call[] = [
+    { source: 0, target: 4 },
+    { source: 2, target: 5 },
+    { source: 7, target: 7 },
+    { source: 5, target: 10 },
+    { source: 1, target: 2 },
+    { source: 2, target: 5 },
+    { source: 12, target: 1 },
+    { source: 13, target: 13 },
+    { source: 0, target: 12 },
 ];
 
 var d3;
@@ -32,36 +61,86 @@ var $;
 var packageName : string = "libhfr";
 var nodeid = "id:"+packageName;
 
+// Add the item to the set unless it's there already, and
+// return the new set. The original is also modified, unless
+// it's null or undefined.
+
+function addToSet<T>(set : T[], item : T) : T[]
+{
+    if(set == null || set === undefined) {
+	set = [];
+    }
+    for(var i:number=0;i<set.length;i++) {
+	if(set[i] == item) return set;
+    }
+    set.push(item);
+    return set;
+}
 
 function database()
 {
+    // This function fetches JSON from the graph database intermediate server (server.py)
+    // and reformats the data into a form acceptable to D3.
     $.getJSON('/graph/present/' + nodeid, function (node_info) {
-	var json1 = [];
-	var callGraph = [];
+	var json1 : D3Symbol[] = [];
+	var callGraph : Call[] = [];
+	var objectCallGraph : { [id: number]: number[] } = {};
+	var nodeToObjectMap : { [id: number]: GraphDBNode } = {};
 	console.log("Displaying node: ", node_info);
-	var pack = node_info.nodes[0];
+	var pack : GraphDBNode = node_info.nodes[0];
 	console.log("Package returned: "+pack.caption);
 	for(var o=0;o<pack.contains.nodes.length;o++) {
-	    var object = pack.contains.nodes[o];
+	    var object : GraphDBNode = pack.contains.nodes[o];
 	    console.log("Recording object "+object.caption);
-	    var allNodes = {}
+	    var allNodes : {[Identifier:number]:boolean} = {};
 	    for (var s=0;s<object.contains.nodes.length;s++) {
-		var node = object.contains.nodes[s];
+		var node : GraphDBNode = object.contains.nodes[s];
 		if(node.caption == "") {
 		    console.log("Loaded object with no caption! id: "+node._id);
 		}
-		json1.push( { "Object": node.caption.substr(0,4), "parent": object.caption.substr(0,4), "value": 0, "_id": node._id});
-		allNodes[node._id] = true;
-	    }
-	    for (var e=0;e<object.contains.edges.length;e++) {
-		var edge = object.contains.edges[e];
-		if(allNodes[edge._source] == true && allNodes[edge._target] == true) {
-		    callGraph.push( { source: [edge._source, "", ""], target: [edge._target, "", ""] } );
+		if(node.parent) { // Nodes without parents are external symbols, which are ignored at the moment.
+		    if(node.parent != object._id) {
+			console.log("Symbol "+node._id+ " is in the wrong parent and will not be recorded (symbol parent "+node.parent+", object id "+object._id);
+		    } else {
+			json1.push( { "Object": node.caption.substr(0,4), "parent": object.caption.substr(0,4), "value": 0, "_id": node._id});
+			console.log("Recording map of symbol "+node._id+" to object "+object._id)
+			if(nodeToObjectMap[node._id]) {
+			    console.log("Warning: symbol "+node._id+" was already mapped to "+nodeToObjectMap[node._id]._id);
+			}
+			nodeToObjectMap[node._id] = object;
+		    }
+		    allNodes[node._id] = true;
 		}
 	    }
 	}
+	for(var o=0;o<pack.contains.nodes.length;o++) {
+	    var object = pack.contains.nodes[o];
+	    for (var e=0;e<object.contains.edges.length;e++) {
+		var edge = object.contains.edges[e];
+		if(allNodes[edge._source] == true && allNodes[edge._target] == true) {
+		    callGraph.push( { source: edge._source, target: edge._target } );
+		    var callerObject : number = nodeToObjectMap[edge._source]._id;
+		    var calledObject : number = nodeToObjectMap[edge._target]._id;
+		    console.log("Mapping call source "+edge._source+" to object "+callerObject+" and target "+edge._target+" to object "+calledObject);
+		    if(callerObject != calledObject) {
+			objectCallGraph[callerObject] = addToSet(objectCallGraph[callerObject],calledObject);
+		    }
+		}
+	    }
+	}
+
+	// Convert the set-map thing into an array of pairs
+	var objectCalls = [];
+	Object.keys(objectCallGraph).forEach(function (key) {
+	    var callingObject = key;
+	    var callers = objectCallGraph[key];
+	    callers.forEach(function (value) {
+		objectCalls.push([callingObject, value]);
+	    });
+	});
+	console.log("Produced object call graph: ", objectCalls);
 	graph = initGraph();
-	graph.data(json1, callGraph);
+	graph.data(json1, callGraph, objectCalls);
     });
 }
 
