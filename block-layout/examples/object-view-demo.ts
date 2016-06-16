@@ -79,18 +79,20 @@ function addToSet<T>(set : T[], item : T) : T[]
 
 function database()
 {
+    // This function fetches JSON from the graph database intermediate server (server.py)
+    // and reformats the data into a form acceptable to D3.
     $.getJSON('/graph/present/' + nodeid, function (node_info) {
 	var json1 : D3Symbol[] = [];
 	var callGraph : Call[] = [];
-	var objectCallGraph = {};
-	var nodeToObjectMap = {};
+	var objectCallGraph : { [id: number]: number[] } = {};
+	var nodeToObjectMap : { [id: number]: GraphDBNode } = {};
 	console.log("Displaying node: ", node_info);
 	var pack : GraphDBNode = node_info.nodes[0];
 	console.log("Package returned: "+pack.caption);
 	for(var o=0;o<pack.contains.nodes.length;o++) {
 	    var object : GraphDBNode = pack.contains.nodes[o];
 	    console.log("Recording object "+object.caption);
-	    var allNodes = {}
+	    var allNodes : {[Identifier:number]:boolean} = {};
 	    for (var s=0;s<object.contains.nodes.length;s++) {
 		var node : GraphDBNode = object.contains.nodes[s];
 		if(node.caption == "") {
