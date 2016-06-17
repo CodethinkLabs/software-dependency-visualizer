@@ -1,18 +1,18 @@
 var exampleJSON = [
-    { "Object": "Sym1", "parent": "d3d.o", "value": 0, "_id": 0 },
-    { "Object": "Sym2", "parent": "d3d.o", "value": 1, "_id": 1 },
-    { "Object": "Sym3", "parent": "d3d.o", "value": 2, "_id": 2 },
-    { "Object": "Sym4", "parent": "d3d.o", "value": 2, "_id": 3 },
-    { "Object": "Sym1", "parent": "ttf.o", "value": 0, "_id": 4 },
-    { "Object": "Sym2", "parent": "ttf.o", "value": 0, "_id": 5 },
-    { "Object": "Sym3", "parent": "ttf.o", "value": 0, "_id": 6 },
-    { "Object": "Sym1", "parent": "alx.o", "value": 0, "_id": 7 },
-    { "Object": "Sym2", "parent": "alx.o", "value": 1, "_id": 8 },
-    { "Object": "Sym3", "parent": "alx.o", "value": 2, "_id": 9 },
-    { "Object": "Sym1", "parent": "klf.o", "value": 0, "_id": 10 },
-    { "Object": "Sym2", "parent": "klf.o", "value": 1, "_id": 11 },
-    { "Object": "Sym3", "parent": "klf.o", "value": 2, "_id": 12 },
-    { "Object": "Sym4", "parent": "klf.o", "value": 2, "_id": 13 },
+    { "Object": "Sym1", "parent": "d3d.o", "sortIndex": 0, "_id": 0 },
+    { "Object": "Sym2", "parent": "d3d.o", "sortIndex": 1, "_id": 1 },
+    { "Object": "Sym3", "parent": "d3d.o", "sortIndex": 2, "_id": 2 },
+    { "Object": "Sym4", "parent": "d3d.o", "sortIndex": 2, "_id": 3 },
+    { "Object": "Sym1", "parent": "ttf.o", "sortIndex": 0, "_id": 4 },
+    { "Object": "Sym2", "parent": "ttf.o", "sortIndex": 0, "_id": 5 },
+    { "Object": "Sym3", "parent": "ttf.o", "sortIndex": 0, "_id": 6 },
+    { "Object": "Sym1", "parent": "alx.o", "sortIndex": 0, "_id": 7 },
+    { "Object": "Sym2", "parent": "alx.o", "sortIndex": 1, "_id": 8 },
+    { "Object": "Sym3", "parent": "alx.o", "sortIndex": 2, "_id": 9 },
+    { "Object": "Sym1", "parent": "klf.o", "sortIndex": 0, "_id": 10 },
+    { "Object": "Sym2", "parent": "klf.o", "sortIndex": 1, "_id": 11 },
+    { "Object": "Sym3", "parent": "klf.o", "sortIndex": 2, "_id": 12 },
+    { "Object": "Sym4", "parent": "klf.o", "sortIndex": 2, "_id": 13 },
 ];
 
 class Call {
@@ -20,12 +20,26 @@ class Call {
     target: number
 }
 
+// Some optional properties in a D3Symbol. TypeScript doesn't yet support
+// optional properties directly in the class, and we want to initialize
+// without specifying these values.
+interface D3Symbol {
+    highlight?: number; // Default 0; -ve values indicate a caller and +ve a callee
+    sortIndex?: number;
+}
+
 // Symbols which D3 expects in an array.
 class D3Symbol {
+    constructor(symbolName: string, parentName: string, index: number) {
+	this.highlight = 0;
+	this._id = index;
+	this.Object = symbolName;
+	this.parent = parentName;
+	this.sortIndex = 0;
+    }
     Object: string;
     parent: string;
     _id: number;
-    value: number;
 }
 
 // This is the contents of a 'contains' relationship.
@@ -77,13 +91,20 @@ function addToSet<T>(set : T[], item : T) : T[]
     return set;
 }
 
+var symbolArray : D3Symbol[] = [];
+var callGraph : Call[] = [];
+var objectCalls = [];
+
 function database()
 {
     // This function fetches JSON from the graph database intermediate server (server.py)
     // and reformats the data into a form acceptable to D3.
+    symbolArray = [];
+    callGraph = [];
+    objectCalls = [];
+
     $.getJSON('/graph/present/' + nodeid, function (node_info) {
-	var json1 : D3Symbol[] = [];
-	var callGraph : Call[] = [];
+
 	var objectCallGraph : { [id: number]: number[] } = {};
 	var nodeToObjectMap : { [id: number]: GraphDBNode } = {};
 	console.log("Displaying node: ", node_info);
@@ -102,7 +123,7 @@ function database()
 		    if(node.parent != object._id) {
 			console.log("Symbol "+node._id+ " is in the wrong parent and will not be recorded (symbol parent "+node.parent+", object id "+object._id);
 		    } else {
-			json1.push( { "Object": node.caption.substr(0,4), "parent": object.caption.substr(0,4), "value": 0, "_id": node._id});
+			symbolArray.push( new D3Symbol(node.caption.substr(0,4), object.caption.substr(0,4), node._id) );
 			console.log("Recording map of symbol "+node._id+" to object "+object._id)
 			if(nodeToObjectMap[node._id]) {
 			    console.log("Warning: symbol "+node._id+" was already mapped to "+nodeToObjectMap[node._id]._id);
@@ -130,7 +151,6 @@ function database()
 	}
 
 	// Convert the set-map thing into an array of pairs
-	var objectCalls = [];
 	Object.keys(objectCallGraph).forEach(function (key) {
 	    var callingObject = key;
 	    var callers = objectCallGraph[key];
@@ -138,10 +158,18 @@ function database()
 		objectCalls.push([callingObject, value]);
 	    });
 	});
+
 	console.log("Produced object call graph: ", objectCalls);
 	graph = initGraph();
-	graph.data(json1, callGraph, objectCalls);
+	graph.data(symbolArray, callGraph, objectCalls);
     });
+}
+
+function update()
+{
+    graph = initGraph();
+    console.log("Updating graph with ",symbolArray, callGraph);
+    graph.data(symbolArray, callGraph);
 }
 
 var blockSize : number = 64;
@@ -188,8 +216,20 @@ function nodeDrawCallback(_this, thing)
         .attr('ry', 4)
         .attr('width', _this.config.blockSize)
         .attr('height', _this.config.blockSize)
-        .style('fill', function(obj) {
-            return _this.config.colors[obj.color % _this.config.colors.length] || _this.config.colors[0];
+        .style('fill', function(obj : D3Symbol) {
+	    if(obj.highlight > 0) {
+		// Construct a yellow colour for callees
+		var intensityString : string = Math.floor(127+obj.highlight*128/10.0).toString(16);
+		if(intensityString.length <2) intensityString = "0"+intensityString;
+		return "#"+intensityString+intensityString+"00";
+	    } else if(obj.highlight < 0) {
+		// Construct a cyan colour for callers
+		var intensityString : string = Math.floor(127-obj.highlight*128/10.0).toString(16);
+		if(intensityString.length <2) intensityString = "0"+intensityString;
+		return "#00"+intensityString+intensityString;
+	    } else {
+		return "#7f7f7f";
+	    }
         })
         .attr('class', 'relationshipGraph-block')
         .on('mouseover', _this.tip ? _this.tip.show : noop)
@@ -204,6 +244,60 @@ function nodeDrawCallback(_this, thing)
 
 }
 
+function findSymbolByID(id: number) : D3Symbol
+{
+    for(var s : number = 0; s < symbolArray.length; s++) {
+	if(symbolArray[s]._id == id) return symbolArray[s];
+    }
+    return null;
+}
+
+// Recursively highlight all called symbols. The risk of infinite recursion
+// is limited by the intensity reduction.
+
+function highlightAllCalledSymbols(symbol : D3Symbol, intensity : number) : void
+{
+    if(intensity <= 0) return;
+    for(var c:number=0;c<callGraph.length;c++) {
+	if(callGraph[c].source == symbol._id) {
+	    var target : D3Symbol = findSymbolByID(callGraph[c].target);
+	    if (target.highlight < intensity) target.highlight = intensity;
+	    highlightAllCalledSymbols(target, intensity-2);
+	}
+    }
+}
+
+// This should be called with a negative intensity; that will increase towards
+// zero as we proceed up the call chain.
+function highlightAllCallingSymbols(symbol : D3Symbol, intensity : number) : void
+{
+    if(intensity >= 0) return;
+    for(var c:number=0;c<callGraph.length;c++) {
+	if(callGraph[c].target == symbol._id) {
+	    var source : D3Symbol = findSymbolByID(callGraph[c].source);
+	    if (source.highlight > intensity) source.highlight = intensity;
+	    highlightAllCallingSymbols(source, intensity+2);
+	}
+    }
+}
+
+
+function symbolClickCallback(n)
+{
+    console.log("Click",n);
+
+    for(var s:number=0;s<symbolArray.length;s++) {
+	symbolArray[s].highlight = 0;
+    }
+
+    var symbol : D3Symbol = findSymbolByID(n._id);
+    symbol.highlight = 10;
+    highlightAllCalledSymbols(symbol, 10)
+    highlightAllCallingSymbols(symbol, -10)
+
+    update();
+}
+
 function initGraph()
 {
     return d3.select('#graph').relationshipGraph({
@@ -212,10 +306,7 @@ function initGraph()
 	'showKeys': false,
 	'blockSize': 32,
 	'nodeDrawCallback': nodeDrawCallback,
-	'thresholds': [1, 2, 3], // This is the threshold used for each colour
-	onClick: function(obj) { // This is called when a symbol is clicked
-	},
-	colors: ['red', 'green', 'blue'],
+	'onClick': symbolClickCallback
     });
 }
 
@@ -263,5 +354,8 @@ setPackageLabelTextAttributes(group.append("text"));
 
 function example() {
     graph = initGraph();
-    graph.data(exampleJSON, exampleCalls);
+    symbolArray = exampleJSON;
+    callGraph = exampleCalls;
+    graph.data(symbolArray, callGraph);
+
 }
