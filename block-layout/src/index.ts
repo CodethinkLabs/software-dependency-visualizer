@@ -288,8 +288,10 @@ var define, exports, require, module;
         json.sort(function(child1, child2) {
             var parent1 = child1.parent.toLowerCase(),
                 parent2 = child2.parent.toLowerCase();
-
-            return (parent1 > parent2) ? 1 : (parent1 < parent2) ? -1 : 0;
+	    var name1 = child1.symbolName.toLowerCase(),
+		name2 = child2.symbolName.toLowerCase();
+            return (parent1 > parent2) ? 1 : (parent1 < parent2) ? -1 :
+		(name1 > name2) ? 1: (name1 < name2) ? -1: 0
         });
     };
 
