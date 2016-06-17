@@ -1,18 +1,18 @@
 var exampleJSON = [
-    { "Object": "Sym1", "parent": "d3d.o", "sortIndex": 0, "_id": 0 },
-    { "Object": "Sym2", "parent": "d3d.o", "sortIndex": 1, "_id": 1 },
-    { "Object": "Sym3", "parent": "d3d.o", "sortIndex": 2, "_id": 2 },
-    { "Object": "Sym4", "parent": "d3d.o", "sortIndex": 2, "_id": 3 },
-    { "Object": "Sym1", "parent": "ttf.o", "sortIndex": 0, "_id": 4 },
-    { "Object": "Sym2", "parent": "ttf.o", "sortIndex": 0, "_id": 5 },
-    { "Object": "Sym3", "parent": "ttf.o", "sortIndex": 0, "_id": 6 },
-    { "Object": "Sym1", "parent": "alx.o", "sortIndex": 0, "_id": 7 },
-    { "Object": "Sym2", "parent": "alx.o", "sortIndex": 1, "_id": 8 },
-    { "Object": "Sym3", "parent": "alx.o", "sortIndex": 2, "_id": 9 },
-    { "Object": "Sym1", "parent": "klf.o", "sortIndex": 0, "_id": 10 },
-    { "Object": "Sym2", "parent": "klf.o", "sortIndex": 1, "_id": 11 },
-    { "Object": "Sym3", "parent": "klf.o", "sortIndex": 2, "_id": 12 },
-    { "Object": "Sym4", "parent": "klf.o", "sortIndex": 2, "_id": 13 },
+    { "symbolName": "Sym1", "parent": "d3d.o", "sortIndex": 0, "_id": 0 },
+    { "symbolName": "Sym2", "parent": "d3d.o", "sortIndex": 1, "_id": 1 },
+    { "symbolName": "Sym3", "parent": "d3d.o", "sortIndex": 2, "_id": 2 },
+    { "symbolName": "Sym4", "parent": "d3d.o", "sortIndex": 2, "_id": 3 },
+    { "symbolName": "Sym1", "parent": "ttf.o", "sortIndex": 0, "_id": 4 },
+    { "symbolName": "Sym2", "parent": "ttf.o", "sortIndex": 0, "_id": 5 },
+    { "symbolName": "Sym3", "parent": "ttf.o", "sortIndex": 0, "_id": 6 },
+    { "symbolName": "Sym1", "parent": "alx.o", "sortIndex": 0, "_id": 7 },
+    { "symbolName": "Sym2", "parent": "alx.o", "sortIndex": 1, "_id": 8 },
+    { "symbolName": "Sym3", "parent": "alx.o", "sortIndex": 2, "_id": 9 },
+    { "symbolName": "Sym1", "parent": "klf.o", "sortIndex": 0, "_id": 10 },
+    { "symbolName": "Sym2", "parent": "klf.o", "sortIndex": 1, "_id": 11 },
+    { "symbolName": "Sym3", "parent": "klf.o", "sortIndex": 2, "_id": 12 },
+    { "symbolName": "Sym4", "parent": "klf.o", "sortIndex": 2, "_id": 13 },
 ];
 
 class Call {
@@ -26,6 +26,7 @@ class Call {
 interface D3Symbol {
     highlight?: number; // Default 0; -ve values indicate a caller and +ve a callee
     sortIndex?: number;
+    shortName?: string;
 }
 
 // Symbols which D3 expects in an array.
@@ -33,11 +34,11 @@ class D3Symbol {
     constructor(symbolName: string, parentName: string, index: number) {
 	this.highlight = 0;
 	this._id = index;
-	this.Object = symbolName;
+	this.symbolName = symbolName;
 	this.parent = parentName;
 	this.sortIndex = 0;
     }
-    Object: string;
+    symbolName: string;
     parent: string;
     _id: number;
 }
@@ -156,7 +157,7 @@ function database()
 		    if(node.parent != object._id) {
 			console.log("Symbol "+node._id+ " is in the wrong parent and will not be recorded (symbol parent "+node.parent+", object id "+object._id);
 		    } else {
-			symbolArray.push( new D3Symbol(abbreviateSymbol(node.caption), object.caption, node._id) );
+			symbolArray.push( { "symbolName": node.caption, "shortName": abbreviateSymbol(node.caption), "parent": object.caption, "sortIndex": 0, "_id": node._id});
 			console.log("Recording map of symbol "+node._id+" to object "+object._id)
 			if(nodeToObjectMap[node._id]) {
 			    console.log("Warning: symbol "+node._id+" was already mapped to "+nodeToObjectMap[node._id]._id);
@@ -279,7 +280,7 @@ function nodeDrawCallback(_this, thing)
             _this.tip.hide();
             _this.config.onClick(obj);
         });
-    group.append('text').attr('x', 0).attr('y', (_this.config.blockSize)/2).attr("fill", "#000").text(function(obj) { return obj.Object; });
+    group.append('text').attr('x', 0).attr('y', (_this.config.blockSize)/2).attr("fill", "#000").text(function(obj) { return obj.shortName || obj.symbolName; });
     group.attr('class', 'relationshipGraph-node');
 
 

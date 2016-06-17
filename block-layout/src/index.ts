@@ -150,7 +150,7 @@ var define, exports, require, module;
          * @returns {d3.tip} the tip object.
          */
         var createTooltip = function(self) {
-            var hiddenKeys = ['ROW', 'INDEX', 'COLOR', 'PARENTCOLOR', 'PARENT'],
+            var shownKeys = ['SYMBOLNAME'],
                 showKeys = self.config.showKeys;
 
             return d3.tip().attr('class', 'relationshipGraph-tip')
@@ -166,7 +166,7 @@ var define, exports, require, module;
                         var element = keys[count],
                             upperCaseKey = element.toUpperCase();
 
-                        if (!contains(hiddenKeys, upperCaseKey)) {
+                        if (contains(shownKeys, upperCaseKey)) {
                             var row = document.createElement('tr'),
                                 key = showKeys ? document.createElement('td') : null,
                                 value = document.createElement('td');
