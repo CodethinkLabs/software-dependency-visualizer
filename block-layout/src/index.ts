@@ -571,27 +571,33 @@ var define, exports, require, module;
 		return y;
 	    }
 
+	    function parentTextYFunction(obj, index) {
+		var y : number = parentBoxYFunction(obj,index) + parentBoxHeightFunction(obj,index)/2 + parentTextFunction(obj,index).length*2;
+		return y;
+	    }
+
 	    function parentBoxHeightFunction(obj, index) {
                 var children = Math.ceil(parentSizes[obj] / calculatedMaxChildren) * calculatedMaxChildren;
                 return 8 + Math.ceil(children / calculatedMaxChildren) * _this.config.blockSize;
 	    }
+
 	    function parentTextFunction(obj, index) {
                 return obj + ' (' + parentSizes[obj] + ')';
 	    }
+
 	    // Add new parent nodes.
             var parentGroups = [];
             for (i = 0; i < parentNodes.length; i++) {
                 parentGroups[i] = parentNodes[i].enter().append('g');
                 parentGroups[i].append('text')
                     .text(parentTextFunction)
-                    .attr('x', 8)
-                    .attr('y', parentBoxYFunction)
+                    .attr('x', 0)
+                    .attr('y', parentTextYFunction)
                     .style('text-anchor', 'start')
                     .style('fill', function(obj) {
                        return (obj.parentColor !== undefined) ? _this.config.colors[obj.parentColor] : '#000000';
                     })
                     .attr('class', 'relationshipGraph-Text')
-                    .attr('transform', 'translate(-6, ' + this.config.blockSize / 1.5 + ')');
             }
 
 	    // Add a rectangle which should enclose all objects
@@ -612,11 +618,12 @@ var define, exports, require, module;
                 previousParents = []; // helper to calculate parentBoxY
                 parentNodes[i].select('text')
                     .text(parentTextFunction)
-                    .attr('x', 8)
-                    .attr('y', parentBoxYFunction)
+                    .attr('x', 0)
+                    .attr('y', 0)
                     .style('fill', function(obj) {
                         return (obj.parentColor !== undefined) ? _this.config.colors[obj.parentColor] : '#000000';
-                    });
+                    })
+		    .attr("transform", function(obj, index) { return "translate(16,"+parentTextYFunction(obj,index)+") rotate (-90)"; });
             }
 
             // Remove deleted parent nodes.
@@ -707,7 +714,7 @@ var define, exports, require, module;
             // Update existing child nodes.
             for (i = 0; i < childrenNodes.length; i++) {
                 childrenNodes[i].transition(_this.config.transitionTime)
-                    .attr( "transform", function(obj) { var x = longestWidth + ((obj.index - 1) * _this.config.blockSize);
+                    .attr( "transform", function(obj) { var x = 32 + ((obj.index - 1) * _this.config.blockSize);
                                                         var y = nodeYFunction(obj);
                                                         return "translate ("+x+" "+y+")"; })
                     .style('fill', function(obj) {
