@@ -20,16 +20,18 @@ class Call {
     target: number
 }
 
-// Some optional properties in a D3Symbol
+// Some optional properties in a D3Symbol. TypeScript doesn't yet support
+// optional properties directly in the class, and we want to initialize
+// without specifying these values.
 interface D3Symbol {
-    highlight?: boolean;
+    highlight?: number; // Default 0; -ve values indicate a caller and +ve a callee
     sortIndex?: number;
 }
 
 // Symbols which D3 expects in an array.
 class D3Symbol {
     constructor(symbolName: string, parentName: string, index: number) {
-	this.highlight = false;
+	this.highlight = 0;
 	this._id = index;
 	this.Object = symbolName;
 	this.parent = parentName;
@@ -215,10 +217,19 @@ function nodeDrawCallback(_this, thing)
         .attr('width', _this.config.blockSize)
         .attr('height', _this.config.blockSize)
         .style('fill', function(obj : D3Symbol) {
-	    if(obj.highlight) {
-		return "#ffff00";
+	    if(obj.highlight > 0) {
+		// Construct a yellow colour for callees
+		var intensityString : string = Math.floor(127+obj.highlight*128/10.0).toString(16);
+		if(intensityString.length <2) intensityString = "0"+intensityString;
+		return "#"+intensityString+intensityString+"00";
+	    } else if(obj.highlight < 0) {
+		// Construct a cyan colour for callers
+		var intensityString : string = Math.floor(127-obj.highlight*128/10.0).toString(16);
+		if(intensityString.length <2) intensityString = "0"+intensityString;
+		return "#00"+intensityString+intensityString;
+	    } else {
+		return "#7f7f7f";
 	    }
-	    return "#7f7f7f";
         })
         .attr('class', 'relationshipGraph-block')
         .on('mouseover', _this.tip ? _this.tip.show : noop)
@@ -233,17 +244,57 @@ function nodeDrawCallback(_this, thing)
 
 }
 
+function findSymbolByID(id: number) : D3Symbol
+{
+    for(var s : number = 0; s < symbolArray.length; s++) {
+	if(symbolArray[s]._id == id) return symbolArray[s];
+    }
+    return null;
+}
+
+// Recursively highlight all called symbols. The risk of infinite recursion
+// is limited by the intensity reduction.
+
+function highlightAllCalledSymbols(symbol : D3Symbol, intensity : number) : void
+{
+    if(intensity <= 0) return;
+    for(var c:number=0;c<callGraph.length;c++) {
+	if(callGraph[c].source == symbol._id) {
+	    var target : D3Symbol = findSymbolByID(callGraph[c].target);
+	    if (target.highlight < intensity) target.highlight = intensity;
+	    highlightAllCalledSymbols(target, intensity-2);
+	}
+    }
+}
+
+// This should be called with a negative intensity; that will increase towards
+// zero as we proceed up the call chain.
+function highlightAllCallingSymbols(symbol : D3Symbol, intensity : number) : void
+{
+    if(intensity >= 0) return;
+    for(var c:number=0;c<callGraph.length;c++) {
+	if(callGraph[c].target == symbol._id) {
+	    var source : D3Symbol = findSymbolByID(callGraph[c].source);
+	    if (source.highlight > intensity) source.highlight = intensity;
+	    highlightAllCallingSymbols(source, intensity+2);
+	}
+    }
+}
+
+
 function symbolClickCallback(n)
 {
     console.log("Click",n);
+
     for(var s:number=0;s<symbolArray.length;s++) {
-	if(symbolArray[s]._id == n._id) {
-	    symbolArray[s].highlight = true;
-	    console.log("Updating node with id "+n._id);
-	} else {
-	    symbolArray[s].highlight = false;
-	}
+	symbolArray[s].highlight = 0;
     }
+
+    var symbol : D3Symbol = findSymbolByID(n._id);
+    symbol.highlight = 10;
+    highlightAllCalledSymbols(symbol, 10)
+    highlightAllCallingSymbols(symbol, -10)
+
     update();
 }
 
@@ -255,9 +306,7 @@ function initGraph()
 	'showKeys': false,
 	'blockSize': 32,
 	'nodeDrawCallback': nodeDrawCallback,
-	'onClick': symbolClickCallback,
-	'thresholds': [1, 2, 3], // This is the threshold used for each colour
-	colors: ['red', 'green', 'blue'],
+	'onClick': symbolClickCallback
     });
 }
 
