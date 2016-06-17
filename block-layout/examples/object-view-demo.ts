@@ -259,7 +259,9 @@ function nodeDrawCallback(_this, thing)
         .attr('width', _this.config.blockSize)
         .attr('height', _this.config.blockSize)
         .style('fill', function(obj : D3Symbol) {
-	    if(obj.highlight > 0) {
+	    if(obj.highlight > 10) {
+		return "#00ff00";
+	    } else if(obj.highlight > 0) {
 		// Construct a yellow colour for callees
 		var intensityString : string = Math.floor(127+obj.highlight*128/10.0).toString(16);
 		if(intensityString.length <2) intensityString = "0"+intensityString;
@@ -333,7 +335,7 @@ function symbolClickCallback(n)
     }
 
     var symbol : D3Symbol = findSymbolByID(n._id);
-    symbol.highlight = 10;
+    symbol.highlight = 12;
     highlightAllCalledSymbols(symbol, 10)
     highlightAllCallingSymbols(symbol, -10)
 
