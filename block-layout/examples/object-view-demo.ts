@@ -33,6 +33,7 @@ class D3Symbol {
 	this._id = index;
 	this.Object = symbolName;
 	this.parent = parentName;
+	this.sortIndex = 0;
     }
     Object: string;
     parent: string;
