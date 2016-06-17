@@ -95,6 +95,39 @@ var symbolArray : D3Symbol[] = [];
 var callGraph : Call[] = [];
 var objectCalls = [];
 
+function countChars(s: string, c:string) : number
+{
+    var n:number =0;
+    for(var i:number=0;i<s.length;i++) {
+	if(s.charAt(i) == c) n++;
+    }
+    return n;
+}
+
+function abbreviateSymbol(s: string) : string
+{
+    var x : number = s.lastIndexOf("::")
+    if(x>=0) s = s.substring(x+2);
+
+    if(s.toUpperCase() != s && s.toLowerCase() != s) {
+	// This looks like mixed case, maybe camelcase
+	var initials : string = "";
+	for(var i:number=0;i<s.length;i++) {
+	    if(s[i].toUpperCase() == s[i]) initials += s[i];
+	}
+	s = initials;
+    }
+    else if(countChars(s, '_') > 2 && s.length>5) {
+	// Looks like an underscore-separated name
+	var initials : string = "";
+	for(var i:number=1;i<s.length;i++) {
+	    if(s[i] == '_' && s[i-1] != '_') initials += s[i-1];
+	}
+	s = initials;
+    }
+    return s;
+}
+
 function database()
 {
     // This function fetches JSON from the graph database intermediate server (server.py)
@@ -123,7 +156,7 @@ function database()
 		    if(node.parent != object._id) {
 			console.log("Symbol "+node._id+ " is in the wrong parent and will not be recorded (symbol parent "+node.parent+", object id "+object._id);
 		    } else {
-			symbolArray.push( new D3Symbol(node.caption.substr(0,4), object.caption.substr(0,4), node._id) );
+			symbolArray.push( new D3Symbol(abbreviateSymbol(node.caption), object.caption, node._id) );
 			console.log("Recording map of symbol "+node._id+" to object "+object._id)
 			if(nodeToObjectMap[node._id]) {
 			    console.log("Warning: symbol "+node._id+" was already mapped to "+nodeToObjectMap[node._id]._id);
