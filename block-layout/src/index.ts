@@ -677,28 +677,35 @@ var define, exports, require, module;
 			var x2 : number = linkXFunction(target);
 			var y1 : number = linkYFunction(source);
 			var y2 : number = linkYFunction(target);
+
+			var lineXOffset : number = 32;
+			var lineYOffset : number = 48;
+
 			var path: string = "";
+			// Start marker
+			path += " M"+(x1 + lineXOffset) + ","+(y1+lineYOffset);
+			path += " L"+(x1 + lineXOffset - 4) + ","+(y1+lineYOffset - 4);
+			path += " L"+(x1 + lineXOffset - 4) + ","+(y1+lineYOffset + 4);
+			path += " L"+(x1 + lineXOffset) + ","+(y1+lineYOffset);
 			if (y1 == y2) {
 			    if (x1 == x2) {
 				// This calls itself; ignore it
 			    } else {
-				path = "M "+(x1 + 64) + ","+(y1+32);
-				path += " C "+(x1 + 64) + ","+(y1+128);
-				path += " "+(x2 + 64) + ","+(y2+128);
-				path += " "+(x2 + 64) + ","+(y2+32);
-				path += " L"+(x2 + 64 - 4) + ","+(y2+32 - 4);
-				path += " L"+(x2 + 64 - 4) + ","+(y2+32 + 4);
-				path += " L"+(x2 + 64) + ","+(y2+32);
+				path += " C "+(x1 + lineXOffset) + ","+(y1+128);
+				path += " "+(x2 + lineXOffset) + ","+(y2+128);
+				path += " "+(x2 + lineXOffset) + ","+(y2+lineYOffset);
 			    }
 			} else {
-			    path = "M "+(x1 + 64) + ","+(y1+32);
-			    path += " C "+(x1 + 64+256) + ","+(y1+32);
-			    path += " "+(x2 + 64+256) + ","+(y2+32);
-			    path += " "+(x2 + 64) + ","+(y2+32);
-			    path += " L"+(x2 + 64 - 4) + ","+(y2+32 - 4);
-			    path += " L"+(x2 + 64 - 4) + ","+(y2+32 + 4);
-			    path += " L"+(x2 + 64) + ","+(y2+32);
+			    path += " C "+(x1 + lineXOffset+256) + ","+(y1+lineYOffset);
+			    path += " "+(x2 + lineXOffset+256) + ","+(y2+lineYOffset);
+			    path += " "+(x2 + lineXOffset) + ","+(y2+lineYOffset);
 			}
+			// End marker
+			path += " M"+(x2 + lineXOffset - 4) + ","+(y2+lineYOffset - 4);
+			path += " L"+(x2 + lineXOffset - 4) + ","+(y2+lineYOffset + 4);
+			path += " L"+(x2 + lineXOffset + 4) + ","+(y2+lineYOffset + 4);
+			path += " L"+(x2 + lineXOffset + 4) + ","+(y2+lineYOffset - 4);
+			path += " L"+(x2 + lineXOffset - 4) + ","+(y2+lineYOffset - 4);
 			return path;
 		    });
 	    }
