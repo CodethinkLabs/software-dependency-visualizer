@@ -370,7 +370,7 @@ function setPackageLabelAttributes(selection)
 	.attr("x", 0).attr("rx", 4).attr("ry", 4)
 	.attr("y", function(d, index) { return index*40; })
 	.style("fill", "#000000")
-	.attr("width", 100);
+	.attr("width", 150);
 }
 
 function setPackageLabelTextAttributes(selection)
