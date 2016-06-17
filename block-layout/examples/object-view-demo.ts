@@ -198,6 +198,14 @@ function nodeYFunction (obj) {
     }
 }
 
+function linkXFunction (obj) {
+    return nodeXFunction (obj) + obj.col * 350;
+}
+
+function linkYFunction (obj) {
+    return nodeYFunction (obj);
+}
+
 function nodeTranslationFunction (obj) { var x = nodeXFunction(obj);
 					 var y = nodeYFunction(obj);
 					 return "translate ("+x+" "+y+")"; }
