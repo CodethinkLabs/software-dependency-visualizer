@@ -136,7 +136,8 @@ function database()
     symbolArray = [];
     callGraph = [];
     objectCalls = [];
-
+    var externalPackages : string[]= [];
+    
     $.getJSON('/graph/present/' + nodeid, function (node_info) {
 
 	var objectCallGraph : { [id: number]: number[] } = {};
@@ -148,6 +149,7 @@ function database()
 	    var object : GraphDBNode = pack.contains.nodes[o];
 	    console.log("Recording object "+object.caption);
 	    var allNodes : {[Identifier:number]:boolean} = {};
+	    var externalSyms : {[Identifier:number]:boolean} = {};
 	    for (var s=0;s<object.contains.nodes.length;s++) {
 		var node : GraphDBNode = object.contains.nodes[s];
 		if(node.caption == "") {
@@ -165,6 +167,17 @@ function database()
 			nodeToObjectMap[node._id] = object;
 		    }
 		    allNodes[node._id] = true;
+		} else {
+		    // Possible external package?
+		    var externalPackage : string;
+		    externalPackage = node.caption.substring(3);
+		    var x: number = externalPackage.indexOf(":");
+		    externalPackage = externalPackage.substring(0,x);
+		    console.log("Possible external package: "+externalPackage);
+		    if(externalPackage != "NULL" && externalPackage != packageName) {
+			addToSet(externalPackages, externalPackage);
+			externalSyms[node._id] = true;
+		    }
 		}
 	    }
 	}
@@ -181,6 +194,10 @@ function database()
 			objectCallGraph[callerObject] = addToSet(objectCallGraph[callerObject],calledObject);
 		    }
 		}
+		else if(allNodes[edge._source] == true && externalSyms[edge._target]) {
+		    // That's a call outwards
+		    callGraph.push( { source: edge._source, target: -2 } );
+		}
 	    }
 	}
 
@@ -196,6 +213,13 @@ function database()
 	console.log("Produced object call graph: ", objectCalls);
 	graph = initGraph();
 	graph.data(symbolArray, callGraph, objectCalls);
+
+	var calloutNodes = d3.select(".callsOut").selectAll("rect").data(externalPackages);
+	var group = calloutNodes.enter().append("g");
+	setPackageLabelAttributes(group.append("rect"));
+	setPackageLabelTextAttributes(group.append("text"));
+
+	calloutNodes.data(externalPackages);
     });
 }
 
@@ -378,21 +402,11 @@ function setPackageLabelTextAttributes(selection)
     selection.attr("x", 10)
 	.attr("y", function(d, index) { return index*40+20; })
 	.style("fill", "#ffffff")
-	.text(function(d) { return "Package "+d });
+	.text(function(d) { return d });
 }
 
 
 var group = d3.select(".callsIn").selectAll("rect").data(data).enter().append("g");
-
-setPackageLabelAttributes(group.append("rect"));
-
-setPackageLabelTextAttributes(group.append("text"));
-
-// And the same for calls out
-var data = [ "E", "F", "G", "H" ];
-
-var group = d3.select(".callsOut").selectAll("rect").data(data).enter().append("g");
-
 setPackageLabelAttributes(group.append("rect"));
 setPackageLabelTextAttributes(group.append("text"));
 
