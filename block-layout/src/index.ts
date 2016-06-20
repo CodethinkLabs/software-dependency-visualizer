@@ -725,7 +725,13 @@ var define, exports, require, module;
 			path += " L"+(x1 + lineXOffset) + ","+(y1+lineYOffset);
 			if (y1 == y2) {
 			    if (x1 == x2) {
-				// This calls itself; ignore it
+                                path += " C"+(x1 + lineXOffset + 10) + ","+(y1+lineYOffset + 20);
+                                path += " "+(x1 + lineXOffset + 20) + ","+(y1+lineYOffset + 10);
+                                path += " "+(x1 + lineXOffset + 20) + ","+(y1+lineYOffset);
+                                path += " C "+(x1 + lineXOffset + 20) + ","+(y1+lineYOffset - 10);
+                                path += " "+(x1 + lineXOffset + 10) + ","+(y1+lineYOffset - 20);
+                                path += " "+(x1 + lineXOffset) + ","+(y1+lineYOffset);
+                                return path;
 			    } else {
 				path += " C "+(x1 + lineXOffset) + ","+(y1+128);
 				path += " "+(x2 + lineXOffset) + ","+(y2+128);
