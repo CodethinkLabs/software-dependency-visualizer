@@ -77,8 +77,7 @@ var exampleCalls : Call[] = [
 
 var d3;
 var $;
-var packageName : string = "libhfr";
-var nodeid = "id:"+packageName;
+var packageName : string;
 
 // Add the item to the set unless it's there already, and
 // return the new set. The original is also modified, unless
@@ -153,7 +152,7 @@ function database()
     callGraph = [];
     objectCalls = [];
     var externalPackages : string[]= [];
-    
+
     $.getJSON('/graph/present/' + nodeid, function (node_info) {
 
 	var objectCallGraph : { [id: number]: number[] } = {};
@@ -238,6 +237,8 @@ function database()
 
 	calloutNodes.data(externalPackages);
     });
+    let title = <HTMLElement> document.querySelector('h1')
+    title.innerHTML = packageName;
 }
 
 function update()
@@ -325,8 +326,6 @@ function nodeDrawCallback(_this, thing)
         });
     group.append('text').attr('x', 0).attr('y', (_this.config.blockSize)/2).attr("fill", "#000").text(function(obj) { return obj.shortName || obj.symbolName; });
     group.attr('class', 'relationshipGraph-node');
-
-
 }
 
 function findSymbolByID(id: number) : D3Symbol
@@ -419,9 +418,6 @@ var graph = initGraph();
 
 var interval = null;
 
-let title = <HTMLElement> document.querySelector('h1')
-title.innerHTML = packageName;
-
 // Thing to add all the callers
 var data = [ "A", "B", "C", "D" ];
 
@@ -443,14 +439,34 @@ function setPackageLabelTextAttributes(selection)
 }
 
 
-var group = d3.select(".callsIn").selectAll("rect").data(data).enter().append("g");
-setPackageLabelAttributes(group.append("rect"));
-setPackageLabelTextAttributes(group.append("text"));
+// Read a page's GET URL variables and return them as an associative array.
+// From http://jquery-howto.blogspot.co.uk/2009/09/get-url-parameters-values-with-jquery.html
+function getUrlVars()
+{
+    var vars = [], hash;
+    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+    for(var i = 0; i < hashes.length; i++)
+    {
+	hash = hashes[i].split('=');
+	vars.push(hash[0]);
+	vars[hash[0]] = hash[1];
+    }
+    return vars;
+}
 
 function example() {
     graph = initGraph();
     symbolArray = exampleJSON;
     callGraph = exampleCalls;
     graph.data(symbolArray, callGraph);
-
+    let title = <HTMLElement> document.querySelector('h1')
+    title.innerHTML = "Example data";
 }
+
+var group = d3.select(".callsIn").selectAll("rect").data(data).enter().append("g");
+setPackageLabelAttributes(group.append("rect"));
+setPackageLabelTextAttributes(group.append("text"));
+
+var vars = getUrlVars();
+packageName = vars['package'] || "libhfr"
+var nodeid = "id:"+packageName;
