@@ -722,7 +722,13 @@ var define, exports, require, module;
 			path += " L"+(x2 + lineXOffset + 4) + ","+(y2+lineYOffset - 4);
 			path += " L"+(x2 + lineXOffset - 4) + ","+(y2+lineYOffset - 4);
 			return path;
-		    });
+		    }).
+		    attr('stroke', function(obj) {
+			if (obj.highlight == null) return "#444";
+			var val : string = (10-obj.highlight*8).toString(16);
+			return "#"+val+val+val;
+		    })
+		    .style("fill", "none");
 	    }
 
 	    /* Links */
@@ -731,7 +737,6 @@ var define, exports, require, module;
             // Add new child nodes.
 	    var links = linkNodes.enter().append("path");
 	    configureLinePositions(links);
-	    links.style("stroke", "#000").style("fill","none").attr('class', 'relationshipGraph-call');
 
             // Update existing child nodes.
             for (i = 0; i < childrenNodes.length; i++) {

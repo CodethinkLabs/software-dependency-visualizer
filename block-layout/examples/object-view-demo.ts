@@ -15,9 +15,13 @@ var exampleJSON = [
     { "symbolName": "Sym4", "parent": "klf.o", "sortIndex": 2, "_id": 13 },
 ];
 
+interface Call {
+    highlight?: number;
+}
+
 class Call {
-    source: number
-    target: number
+    source: number;
+    target: number;
 }
 
 // Some optional properties in a D3Symbol. TypeScript doesn't yet support
@@ -333,6 +337,17 @@ function findSymbolByID(id: number) : D3Symbol
     return null;
 }
 
+
+function clearAllHighlights(): void
+{
+    for(var c:number=0;c<callGraph.length;c++) {
+	callGraph[c].highlight = 0;
+    }
+    for(var s:number=0;s<symbolArray.length;s++) {
+	symbolArray[s].highlight = 0;
+    }
+}
+
 // Recursively highlight all called symbols. The risk of infinite recursion
 // is limited by the intensity reduction.
 
@@ -342,6 +357,7 @@ function highlightAllCalledSymbols(symbol : D3Symbol, intensity : number) : void
     for(var c:number=0;c<callGraph.length;c++) {
 	if(callGraph[c].source == symbol._id) {
 	    var target : D3Symbol = findSymbolByID(callGraph[c].target);
+	    callGraph[c].highlight = 1;
 	    if(target == null) {
 		console.log("Called symbol is null - possible call-in");
 	    } else {
@@ -360,6 +376,7 @@ function highlightAllCallingSymbols(symbol : D3Symbol, intensity : number) : voi
     for(var c:number=0;c<callGraph.length;c++) {
 	if(callGraph[c].target == symbol._id) {
 	    var source : D3Symbol = findSymbolByID(callGraph[c].source);
+	    callGraph[c].highlight = 1;
 	    if(source == null) {
 		console.log("Calling symbol is null - possible call-in");
 	    } else {
@@ -375,9 +392,8 @@ function symbolClickCallback(n)
 {
     console.log("Click",n);
 
-    for(var s:number=0;s<symbolArray.length;s++) {
-	symbolArray[s].highlight = 0;
-    }
+
+    clearAllHighlights();
 
     var symbol : D3Symbol = findSymbolByID(n._id);
     symbol.highlight = 12;
