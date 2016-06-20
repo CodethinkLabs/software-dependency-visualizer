@@ -329,8 +329,12 @@ function highlightAllCalledSymbols(symbol : D3Symbol, intensity : number) : void
     for(var c:number=0;c<callGraph.length;c++) {
 	if(callGraph[c].source == symbol._id) {
 	    var target : D3Symbol = findSymbolByID(callGraph[c].target);
-	    if (target.highlight < intensity) target.highlight = intensity;
-	    highlightAllCalledSymbols(target, intensity-2);
+	    if(target == null) {
+		console.log("Called symbol is null - possible call-in");
+	    } else {
+		if (target.highlight < intensity) target.highlight = intensity;
+		highlightAllCalledSymbols(target, intensity-2);
+	    }
 	}
     }
 }
@@ -343,8 +347,12 @@ function highlightAllCallingSymbols(symbol : D3Symbol, intensity : number) : voi
     for(var c:number=0;c<callGraph.length;c++) {
 	if(callGraph[c].target == symbol._id) {
 	    var source : D3Symbol = findSymbolByID(callGraph[c].source);
-	    if (source.highlight > intensity) source.highlight = intensity;
-	    highlightAllCallingSymbols(source, intensity+2);
+	    if(source == null) {
+		console.log("Calling symbol is null - possible call-in");
+	    } else {
+		if (source.highlight > intensity) source.highlight = intensity;
+		highlightAllCallingSymbols(source, intensity+2);
+	    }
 	}
     }
 }
