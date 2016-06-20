@@ -122,7 +122,8 @@ var define, exports, require, module;
 					  '#cf4799', '#c42583', '#731451', '#f3d1bf', '#c77745'
 					 ],  // Colors to use for blocks.
             transitionTime: userConfig.transitionTime || 1500,  // Time for a transition to start and complete (in milliseconds).
-            truncate: userConfig.truncate || 25  // Maximum length of a parent label before it gets truncated. Use 0 to turn off truncation.
+            truncate: userConfig.truncate || 25,  // Maximum length of a parent label before it gets truncated. Use 0 to turn off truncation.
+            columns: userConfig.columns || 2 // Number of columns for the layout
         };
 
         if (this.config.showTooltips === undefined) {
@@ -207,11 +208,20 @@ var define, exports, require, module;
         // Create the svg element that will contain the graph.
         this.svg = this.config.selection
             .append('svg')
-            .attr('width', '500')
+            .attr('width', '800')
             .attr('height', '500')
-            .attr('style', 'display: block')
+            .attr('style', 'display: block');
+
+        this.cols = [];
+        for ( var i = 0; i < this.config.columns; i++ ) {
+            this.cols.push(this.svg
+                .append('g')
+                .attr('transform', 'translate(' + i * 350 +', 0)'));
+        }
+
+        this.links = this.svg
             .append('g')
-            .attr('transform', 'translate(10, 0)');
+            .attr('transform', 'translate(0, 0)');
 
         this.graph = this;
     };
@@ -299,9 +309,20 @@ var define, exports, require, module;
             parentNames = Object.keys(parentSizes),
             i,
             index = 0,
-            row = 0,
             previousParent = '',
-	    objectNo : number = 0;
+            objectNo : number[] = [],
+            jsonPerCol = [],
+            parentsPerCol = [],
+            currentCol = 0,
+            rowsPerCol = [];
+
+        // TODO (pedro): this is a hack, understand arrays better!
+        for (i = 0; i < that.config.columns; i++ ) {
+            parentsPerCol.push([]);
+            jsonPerCol.push([]);
+            objectNo.push(0);
+            rowsPerCol.push(0)
+        }
 
         for (i = 0; i < parents.length; i++) {
             var current = parents[i] + ' ( ' + parentSizes[parentNames[i]] + ') ';
@@ -315,33 +336,60 @@ var define, exports, require, module;
         var longestWidth = that.ctx.measureText(longest).width,
             parentDiv = that.config.selection[0][0],
             calculatedMaxChildren = (that.config.maxChildCount === 0) ?
-            Math.floor((parentDiv.parentElement.clientWidth - 15 - longestWidth) / that.config.blockSize) :
-            that.config.maxChildCount;
+                Math.floor((parentDiv.parentElement.clientWidth - 15 - longestWidth) / that.config.blockSize) :
+                that.config.maxChildCount;
 
+        var getIndexOfSmaller = function (rowsPerCol) {
+            var min = 0;
+            for (var j = 0; j < rowsPerCol.length; j++) {
+                if (rowsPerCol[j] < rowsPerCol[min]) {
+                    min = j;
+                }
+            }
+            return min;
+        };
+        var calculateMaxRows = function (rowsPerCol) {
+            var max = 0;
+            for (var j = 0; j < rowsPerCol.length; j++) {
+                if (rowsPerCol[j] > max) {
+                    max = rowsPerCol[j]
+                }
+            }
+            return max;
+        };
         for (i = 0; i < json.length; i++) {
             var element = json[i],
                 parent = element.parent;
 
             if (previousParent !== null && previousParent !== parent) {
-                element.row = row + 1;
-		element.objectNo = objectNo + 1;
+                currentCol = getIndexOfSmaller(rowsPerCol);
+
+                element.col = currentCol;
+                rowsPerCol[currentCol]++;
+
+                element.row = rowsPerCol[currentCol]
+                element.objectNo = objectNo[currentCol] + 1;
                 element.index = 1;
 
+                parentsPerCol[currentCol].push(parent)
+
                 index = 2;
-                row++;
-		objectNo++;
+                objectNo[currentCol]++;
             } else {
                 if (index === calculatedMaxChildren + 1) {
                     index = 1;
-                    row++;
+                    rowsPerCol[currentCol]++;
                 }
 
-                element.objectNo = objectNo;
-                element.row = row;
+                element.objectNo = objectNo[currentCol];
+                element.col = currentCol;
+                element.row = rowsPerCol[currentCol];
                 element.index = index;
 
                 index++;
             }
+
+            jsonPerCol[currentCol].push(json[i]);
 
             previousParent = parent;
 
@@ -400,7 +448,9 @@ var define, exports, require, module;
         return {
             longestWidth: longestWidth,
             calculatedMaxChildren: calculatedMaxChildren,
-            maxRow: row
+            maxRow: calculateMaxRows(rowsPerCol),
+            parentsPerCol: parentsPerCol,
+            jsonPerCol: jsonPerCol
         };
     };
 
@@ -484,18 +534,24 @@ var define, exports, require, module;
             calculatedMaxChildren = calculatedResults.calculatedMaxChildren;
             longestWidth = calculatedResults.longestWidth;
             row = calculatedResults.maxRow;
+            var parentsPerCol = calculatedResults.parentsPerCol;
+            var jsonPerCol = calculatedResults.jsonPerCol;
 
             // Set the max width and height.
             maxHeight = row * this.config.blockSize + parents.length*16;
             maxWidth = longestWidth + (calculatedMaxChildren * this.config.blockSize);
 
             // Select all of the parent nodes.
-            var parentNodes = this.svg.selectAll('.relationshipGraph-Text')
-                .data(parents);
-
+            var parentNodes = [];
+            for (i = 0; i < this.cols.length; i++ ) {
+                parentNodes[i] = this.cols[i].selectAll('.relationshipGraph-Text')
+                    .data(parentsPerCol[i]);
+            }
+            var previousParents = []; // helper to calculate parentBoxY
 	    function parentBoxYFunction(obj, index) {
 		var objectSpacing:number = 16;
 		if (index == 0 || index === "undefined") {
+                    previousParents.push(obj);
 		    return 0;
                 }
                 // Determine the Y coordinate by determining the Y coordinate of all of the parents before. This has to be calculated completely
@@ -503,58 +559,70 @@ var define, exports, require, module;
                 var previousParentSize = 0,
                     i = index - 1;
                 while (i > -1) {
-		    var key = Object.keys(parentSizes)[i];
+		    var key = previousParents[i];
 		    if(key) {
                         previousParentSize += Math.ceil(parentSizes[key] / calculatedMaxChildren);
 		    }
                     i--;
                 }
+                previousParents.push(obj);
 
 		var y =  Math.ceil(previousParentSize) * _this.config.blockSize + (index * objectSpacing);
 		return y;
 	    }
 
 	    function parentBoxHeightFunction(obj, index) {
-                var children = Math.ceil(parentSizes[Object.keys(parentSizes)[index]] / calculatedMaxChildren) * calculatedMaxChildren;
+                var children = Math.ceil(parentSizes[obj] / calculatedMaxChildren) * calculatedMaxChildren;
                 return 8 + Math.ceil(children / calculatedMaxChildren) * _this.config.blockSize;
 	    }
 	    function parentTextFunction(obj, index) {
-                return obj + ' (' + parentSizes[Object.keys(parentSizes)[index]] + ')';
+                return obj + ' (' + parentSizes[obj] + ')';
 	    }
 	    // Add new parent nodes.
-            var parentGroups = parentNodes.enter().append('g');
-	    parentGroups.append('text')
-                .text(parentTextFunction)
-                .attr('x', 8)
-                .attr('y', parentBoxYFunction)
-                .style('text-anchor', 'start')
-                .style('fill', function(obj) {
-                    return (obj.parentColor !== undefined) ? _this.config.colors[obj.parentColor] : '#000000';
-                })
-                .attr('class', 'relationshipGraph-Text')
-                .attr('transform', 'translate(-6, ' + this.config.blockSize / 1.5 + ')');
+            var parentGroups = [];
+            for (i = 0; i < parentNodes.length; i++) {
+                parentGroups[i] = parentNodes[i].enter().append('g');
+                parentGroups[i].append('text')
+                    .text(parentTextFunction)
+                    .attr('x', 8)
+                    .attr('y', parentBoxYFunction)
+                    .style('text-anchor', 'start')
+                    .style('fill', function(obj) {
+                       return (obj.parentColor !== undefined) ? _this.config.colors[obj.parentColor] : '#000000';
+                    })
+                    .attr('class', 'relationshipGraph-Text')
+                    .attr('transform', 'translate(-6, ' + this.config.blockSize / 1.5 + ')');
+            }
 
 	    // Add a rectangle which should enclose all objects
-	    parentGroups.append('rect')
-	        .attr('x', 0)
-	        .attr('y', parentBoxYFunction)
-	        .attr('width', 80 + (_this.config.blockSize*_this.config.maxChildCount))
-	        .attr('height', parentBoxHeightFunction)
-	        .attr('class', 'relationshipGraph-ParentBox')
-	        .attr('fill', 'none')
-	        .attr('stroke', '#000000');
+            for (i = 0; i < parentGroups.length; i++) {
+                previousParents = []; // helper to calculate parentBoxY
+                parentGroups[i].append('rect')
+                    .attr('x', 0)
+                    .attr('y', parentBoxYFunction)
+                    .attr('width', 80 + (_this.config.blockSize*_this.config.maxChildCount))
+                    .attr('height', parentBoxHeightFunction)
+                    .attr('class', 'relationshipGraph-ParentBox')
+                    .attr('fill', 'none')
+                    .attr('stroke', '#000000');
+            }
 
             // Update existing parent nodes.
-            parentNodes.select('text')
-                .text(parentTextFunction)
-                .attr('x', 8)
-                .attr('y', parentBoxYFunction)
-                .style('fill', function(obj) {
-                    return (obj.parentColor !== undefined) ? _this.config.colors[obj.parentColor] : '#000000';
-                });
+            for (i = 0; i < parentNodes.length; i++) {
+                previousParents = []; // helper to calculate parentBoxY
+                parentNodes[i].select('text')
+                    .text(parentTextFunction)
+                    .attr('x', 8)
+                    .attr('y', parentBoxYFunction)
+                    .style('fill', function(obj) {
+                        return (obj.parentColor !== undefined) ? _this.config.colors[obj.parentColor] : '#000000';
+                    });
+            }
 
             // Remove deleted parent nodes.
-            parentNodes.exit().remove();
+            for (i = 0; i < parentNodes.length; i++) {
+                parentNodes[i].exit().remove();
+            }
 
 	    // Find a node with a given name and parent
 	    function lookUpNode(objectName, symbolName)
@@ -581,12 +649,15 @@ var define, exports, require, module;
 		return null;
 	    }
 
-	    // Select all of the children nodes.
-            var childrenNodes = this.svg.selectAll('.relationshipGraph-node')
-                .data(json);
+            var childrenNodes = [];
+            for (i = 0; i < jsonPerCol.length; i++) {
+                // Select all of the children nodes.
+                childrenNodes[i] = this.cols[i].selectAll('.relationshipGraph-node')
+                    .data(jsonPerCol[i]);
 
-            // Add new child nodes.
-            _this.config.nodeDrawCallback(_this, childrenNodes.enter());
+                // Add new child nodes.
+                _this.config.nodeDrawCallback(_this, childrenNodes[i].enter());
+            }
 
 	    function configureLinePositions(selection)
 	    {
@@ -595,10 +666,10 @@ var define, exports, require, module;
 			var source = lookUpNodeById(obj.source);
 			var target = lookUpNodeById(obj.target);
 
-			var x1 : number = nodeXFunction(source);
-			var x2 : number = nodeXFunction(target);
-			var y1 : number = nodeYFunction(source);
-			var y2 : number = nodeYFunction(target);
+			var x1 : number = linkXFunction(source);
+			var x2 : number = linkXFunction(target);
+			var y1 : number = linkYFunction(source);
+			var y2 : number = linkYFunction(target);
 			var path: string = "";
 			if (y1 == y2) {
 			    if (x1 == x2) {
@@ -626,7 +697,7 @@ var define, exports, require, module;
 	    }
 
 	    /* Links */
-            var linkNodes = this.svg.selectAll('.relationshipGraph-call').data(callGraph);
+            var linkNodes = this.links.selectAll('.relationshipGraph-call').data(callGraph);
 
             // Add new child nodes.
 	    var links = linkNodes.enter().append("path");
@@ -634,29 +705,31 @@ var define, exports, require, module;
 	    links.style("stroke", "#000").style("fill","none").attr('class', 'relationshipGraph-call');
 
             // Update existing child nodes.
-            childrenNodes.transition(_this.config.transitionTime)
-		.attr( "transform", function(obj) { var x = longestWidth + ((obj.index - 1) * _this.config.blockSize);
-					            var y = nodeYFunction(obj);
-						    return "translate ("+x+" "+y+")"; })
-                .style('fill', function(obj) {
-                    return _this.config.colors[obj.color % _this.config.colors.length] || _this.config.colors[0];
-                });
-
+            for (i = 0; i < childrenNodes.length; i++) {
+                childrenNodes[i].transition(_this.config.transitionTime)
+                    .attr( "transform", function(obj) { var x = longestWidth + ((obj.index - 1) * _this.config.blockSize);
+                                                        var y = nodeYFunction(obj);
+                                                        return "translate ("+x+" "+y+")"; })
+                    .style('fill', function(obj) {
+                        return _this.config.colors[obj.color % _this.config.colors.length] || _this.config.colors[0];
+                    });
+            }
 
 	    var linkTransitions = linkNodes.transition(_this.config.transitionTime);
 	    configureLinePositions(linkTransitions);
 
             // Delete removed child nodes.
-            childrenNodes.exit().transition(_this.config.transitionTime).remove();
+            for (i = 0; i < childrenNodes.length; i++) {
+                childrenNodes[i].exit().transition(_this.config.transitionTime).remove();
+            }
             linkNodes.exit().transition(_this.config.transitionTime).remove();
 
             if (this.config.showTooltips) {
                 d3.select('.d3-tip').remove();
-                this.svg.call(this.tip);
+                this.links.call(this.tip);
             }
 
             this.config.selection.select('svg')
-                .attr('width', 640)
                 .attr('height', maxHeight + 15);
         }
 
