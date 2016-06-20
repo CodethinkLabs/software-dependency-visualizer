@@ -92,6 +92,18 @@ function addToSet<T>(set : T[], item : T) : T[]
     return set;
 }
 
+function getPositionInSet<T>(set : T[], item : T) : number
+{
+    if(set == null || set === undefined) {
+	return -1;
+    }
+    for(var i:number=0;i<set.length;i++) {
+	if(set[i] == item) return i;
+    }
+    return -1;
+}
+
+
 var symbolArray : D3Symbol[] = [];
 var callGraph : Call[] = [];
 var objectCalls = [];
@@ -149,7 +161,7 @@ function database()
 	    var object : GraphDBNode = pack.contains.nodes[o];
 	    console.log("Recording object "+object.caption);
 	    var allNodes : {[Identifier:number]:boolean} = {};
-	    var externalSyms : {[Identifier:number]:boolean} = {};
+	    var externalSyms : {[Identifier:number]:number} = {};
 	    for (var s=0;s<object.contains.nodes.length;s++) {
 		var node : GraphDBNode = object.contains.nodes[s];
 		if(node.caption == "") {
@@ -172,11 +184,11 @@ function database()
 		    var externalPackage : string;
 		    externalPackage = node.caption.substring(3);
 		    var x: number = externalPackage.indexOf(":");
-		    externalPackage = externalPackage.substring(0,x);
 		    console.log("Possible external package: "+externalPackage);
+		    externalPackage = externalPackage.substring(0,x);
 		    if(externalPackage != "NULL" && externalPackage != packageName) {
-			addToSet(externalPackages, externalPackage);
-			externalSyms[node._id] = true;
+			externalPackages = addToSet(externalPackages, externalPackage);
+			externalSyms[node._id] = getPositionInSet(externalPackages, externalPackage);
 		    }
 		}
 	    }
@@ -194,9 +206,10 @@ function database()
 			objectCallGraph[callerObject] = addToSet(objectCallGraph[callerObject],calledObject);
 		    }
 		}
-		else if(allNodes[edge._source] == true && externalSyms[edge._target]) {
+		else if(allNodes[edge._source] == true && externalSyms[edge._target]>=0) {
 		    // That's a call outwards
-		    callGraph.push( { source: edge._source, target: -2 } );
+		    console.log("Source symbol "+edge._source+" calls external symbol "+edge._target);
+		    callGraph.push( { source: edge._source, target: -externalSyms[edge._target] } );
 		}
 	    }
 	}

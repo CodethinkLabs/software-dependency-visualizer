@@ -672,13 +672,26 @@ var define, exports, require, module;
 	    {
 		selection
 		    .attr('d', function(obj) {
+
 			var source = lookUpNodeById(obj.source);
 			var target = lookUpNodeById(obj.target);
+			var package1OffsetY = -80;
+			var x1_control_dx : number = 256;
 
-			var x1 : number = linkXFunction(source);
-			var x2 : number = linkXFunction(target);
-			var y1 : number = linkYFunction(source);
-			var y2 : number = linkYFunction(target);
+			if(obj.target < 0) {
+			    console.log("Target ID is negative; presuming an external link");
+			    var x1 : number = linkXFunction(source);
+			    var x2 : number = 500;
+			    var y1 : number = linkYFunction(source);
+			    var y2 : number = package1OffsetY + obj.target*-32;
+			    var x2_control_dx : number = -128;
+			} else {
+			    var x1 : number = linkXFunction(source);
+			    var x2 : number = linkXFunction(target);
+			    var y1 : number = linkYFunction(source);
+			    var y2 : number = linkYFunction(target);
+			    var x2_control_dx : number = 256;
+			}
 
 			var lineXOffset : number = 32;
 			var lineYOffset : number = 48;
@@ -698,8 +711,8 @@ var define, exports, require, module;
 				path += " "+(x2 + lineXOffset) + ","+(y2+lineYOffset);
 			    }
 			} else {
-			    path += " C "+(x1 + lineXOffset+256) + ","+(y1+lineYOffset);
-			    path += " "+(x2 + lineXOffset+256) + ","+(y2+lineYOffset);
+			    path += " C "+(x1 + lineXOffset+x1_control_dx) + ","+(y1+lineYOffset);
+			    path += " "+(x2 + lineXOffset+x2_control_dx) + ","+(y2+lineYOffset);
 			    path += " "+(x2 + lineXOffset) + ","+(y2+lineYOffset);
 			}
 			// End marker
