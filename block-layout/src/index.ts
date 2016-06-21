@@ -288,8 +288,10 @@ var define, exports, require, module;
         json.sort(function(child1, child2) {
             var parent1 = child1.parent.toLowerCase(),
                 parent2 = child2.parent.toLowerCase();
-
-            return (parent1 > parent2) ? 1 : (parent1 < parent2) ? -1 : 0;
+	    var name1 = child1.symbolName.toLowerCase(),
+		name2 = child2.symbolName.toLowerCase();
+            return (parent1 > parent2) ? 1 : (parent1 < parent2) ? -1 :
+		(name1 > name2) ? 1: (name1 < name2) ? -1: 0
         });
     };
 
@@ -670,13 +672,33 @@ var define, exports, require, module;
 	    {
 		selection
 		    .attr('d', function(obj) {
+
 			var source = lookUpNodeById(obj.source);
 			var target = lookUpNodeById(obj.target);
-
-			var x1 : number = linkXFunction(source);
-			var x2 : number = linkXFunction(target);
-			var y1 : number = linkYFunction(source);
-			var y2 : number = linkYFunction(target);
+			var package1OffsetY = -80;
+			var x1_control_dx : number = 256;
+			if (obj.source >= 0 && source == null) {
+			    console.log("Source "+obj.source+" not in the index!");
+			    return "";
+			}
+			if (obj.target >= 0 && target == null) {
+			    console.log("Source "+obj.source+" not in the index!");
+			    return "";
+			}
+			if(obj.target < 0) {
+			    console.log("Target ID is negative; presuming an external link");
+			    var x1 : number = linkXFunction(source);
+			    var x2 : number = 500;
+			    var y1 : number = linkYFunction(source);
+			    var y2 : number = package1OffsetY + obj.target*-32;
+			    var x2_control_dx : number = -128;
+			} else {
+			    var x1 : number = linkXFunction(source);
+			    var x2 : number = linkXFunction(target);
+			    var y1 : number = linkYFunction(source);
+			    var y2 : number = linkYFunction(target);
+			    var x2_control_dx : number = 256;
+			}
 
 			var lineXOffset : number = 32;
 			var lineYOffset : number = 48;
@@ -696,8 +718,8 @@ var define, exports, require, module;
 				path += " "+(x2 + lineXOffset) + ","+(y2+lineYOffset);
 			    }
 			} else {
-			    path += " C "+(x1 + lineXOffset+256) + ","+(y1+lineYOffset);
-			    path += " "+(x2 + lineXOffset+256) + ","+(y2+lineYOffset);
+			    path += " C "+(x1 + lineXOffset+x1_control_dx) + ","+(y1+lineYOffset);
+			    path += " "+(x2 + lineXOffset+x2_control_dx) + ","+(y2+lineYOffset);
 			    path += " "+(x2 + lineXOffset) + ","+(y2+lineYOffset);
 			}
 			// End marker
@@ -707,7 +729,13 @@ var define, exports, require, module;
 			path += " L"+(x2 + lineXOffset + 4) + ","+(y2+lineYOffset - 4);
 			path += " L"+(x2 + lineXOffset - 4) + ","+(y2+lineYOffset - 4);
 			return path;
-		    });
+		    }).
+		    attr('stroke', function(obj) {
+			if (obj.highlight == null) return "#444";
+			var val : string = (10-obj.highlight*8).toString(16);
+			return "#"+val+val+val;
+		    })
+		    .style("fill", "none");
 	    }
 
 	    /* Links */
@@ -716,7 +744,6 @@ var define, exports, require, module;
             // Add new child nodes.
 	    var links = linkNodes.enter().append("path");
 	    configureLinePositions(links);
-	    links.style("stroke", "#000").style("fill","none").attr('class', 'relationshipGraph-call');
 
             // Update existing child nodes.
             for (i = 0; i < childrenNodes.length; i++) {

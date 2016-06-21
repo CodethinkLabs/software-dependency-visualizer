@@ -140,8 +140,8 @@ def node_name(node):
         print("Attempting to make a name for node %s [using 'compact_uri'] "%repr(node))
         return node.properties['compact_uri']
     else:
-        print("Attempting to make a name for node %s [using uri] "%repr(node))
-        return str(node.uri)
+        print("Attempting to make a name for node %s [using uri] "%(repr(node)))
+        return node['uri']
 
 
 def encode_node(node, contents_graphjson=None):

@@ -15,9 +15,13 @@ var exampleJSON = [
     { "symbolName": "Sym4", "parent": "klf.o", "sortIndex": 2, "_id": 13 },
 ];
 
+interface Call {
+    highlight?: number;
+}
+
 class Call {
-    source: number
-    target: number
+    source: number;
+    target: number;
 }
 
 // Some optional properties in a D3Symbol. TypeScript doesn't yet support
@@ -73,8 +77,7 @@ var exampleCalls : Call[] = [
 
 var d3;
 var $;
-var packageName : string = "libhfr";
-var nodeid = "id:"+packageName;
+var packageName : string;
 
 // Add the item to the set unless it's there already, and
 // return the new set. The original is also modified, unless
@@ -91,6 +94,18 @@ function addToSet<T>(set : T[], item : T) : T[]
     set.push(item);
     return set;
 }
+
+function getPositionInSet<T>(set : T[], item : T) : number
+{
+    if(set == null || set === undefined) {
+	return -1;
+    }
+    for(var i:number=0;i<set.length;i++) {
+	if(set[i] == item) return i;
+    }
+    return -1;
+}
+
 
 var symbolArray : D3Symbol[] = [];
 var callGraph : Call[] = [];
@@ -136,6 +151,7 @@ function database()
     symbolArray = [];
     callGraph = [];
     objectCalls = [];
+    var externalPackages : string[]= [];
 
     $.getJSON('/graph/present/' + nodeid, function (node_info) {
 
@@ -147,7 +163,8 @@ function database()
 	for(var o=0;o<pack.contains.nodes.length;o++) {
 	    var object : GraphDBNode = pack.contains.nodes[o];
 	    console.log("Recording object "+object.caption);
-	    var allNodes : {[Identifier:number]:boolean} = {};
+	    var localNodes : {[Identifier:number]:boolean} = {};
+	    var externalSyms : {[Identifier:number]:number} = {};
 	    for (var s=0;s<object.contains.nodes.length;s++) {
 		var node : GraphDBNode = object.contains.nodes[s];
 		if(node.caption == "") {
@@ -164,7 +181,18 @@ function database()
 			}
 			nodeToObjectMap[node._id] = object;
 		    }
-		    allNodes[node._id] = true;
+		    localNodes[node._id] = true;
+		} else {
+		    // Possible external package?
+		    var externalPackage : string;
+		    externalPackage = node.caption.substring(3);
+		    var x: number = externalPackage.indexOf(":");
+		    console.log("Possible external package: "+externalPackage);
+		    externalPackage = externalPackage.substring(0,x);
+		    if(externalPackage != "NULL" && externalPackage != packageName) {
+			externalPackages = addToSet(externalPackages, externalPackage);
+			externalSyms[node._id] = getPositionInSet(externalPackages, externalPackage);
+		    }
 		}
 	    }
 	}
@@ -172,14 +200,13 @@ function database()
 	    var object = pack.contains.nodes[o];
 	    for (var e=0;e<object.contains.edges.length;e++) {
 		var edge = object.contains.edges[e];
-		if(allNodes[edge._source] == true && allNodes[edge._target] == true) {
+		if(localNodes[edge._source] == true && localNodes[edge._target] == true) {
 		    callGraph.push( { source: edge._source, target: edge._target } );
-		    var callerObject : number = nodeToObjectMap[edge._source]._id;
-		    var calledObject : number = nodeToObjectMap[edge._target]._id;
-		    console.log("Mapping call source "+edge._source+" to object "+callerObject+" and target "+edge._target+" to object "+calledObject);
-		    if(callerObject != calledObject) {
-			objectCallGraph[callerObject] = addToSet(objectCallGraph[callerObject],calledObject);
-		    }
+		}
+		else if(localNodes[edge._source] == true && externalSyms[edge._target]>=0) {
+		    // That's a call outwards
+		    console.log("Source symbol "+edge._source+" calls external symbol "+edge._target);
+		    callGraph.push( { source: edge._source, target: -externalSyms[edge._target] } );
 		}
 	    }
 	}
@@ -193,16 +220,23 @@ function database()
 	    });
 	});
 
-	console.log("Produced object call graph: ", objectCalls);
 	graph = initGraph();
 	graph.data(symbolArray, callGraph, objectCalls);
+
+	var calloutNodes = d3.select(".callsOut").selectAll("rect").data(externalPackages);
+	var group = calloutNodes.enter().append("g");
+	setPackageLabelAttributes(group.append("rect"));
+	setPackageLabelTextAttributes(group.append("text"));
+
+	calloutNodes.data(externalPackages);
     });
+    let title = <HTMLElement> document.querySelector('h1')
+    title.innerHTML = packageName;
 }
 
 function update()
 {
     graph = initGraph();
-    console.log("Updating graph with ",symbolArray, callGraph);
     graph.data(symbolArray, callGraph);
 }
 
@@ -259,7 +293,9 @@ function nodeDrawCallback(_this, thing)
         .attr('width', _this.config.blockSize)
         .attr('height', _this.config.blockSize)
         .style('fill', function(obj : D3Symbol) {
-	    if(obj.highlight > 0) {
+	    if(obj.highlight > 10) {
+		return "#00ff00";
+	    } else if(obj.highlight > 0) {
 		// Construct a yellow colour for callees
 		var intensityString : string = Math.floor(127+obj.highlight*128/10.0).toString(16);
 		if(intensityString.length <2) intensityString = "0"+intensityString;
@@ -282,8 +318,6 @@ function nodeDrawCallback(_this, thing)
         });
     group.append('text').attr('x', 0).attr('y', (_this.config.blockSize)/2).attr("fill", "#000").text(function(obj) { return obj.shortName || obj.symbolName; });
     group.attr('class', 'relationshipGraph-node');
-
-
 }
 
 function findSymbolByID(id: number) : D3Symbol
@@ -292,6 +326,17 @@ function findSymbolByID(id: number) : D3Symbol
 	if(symbolArray[s]._id == id) return symbolArray[s];
     }
     return null;
+}
+
+
+function clearAllHighlights(): void
+{
+    for(var c:number=0;c<callGraph.length;c++) {
+	callGraph[c].highlight = 0;
+    }
+    for(var s:number=0;s<symbolArray.length;s++) {
+	symbolArray[s].highlight = 0;
+    }
 }
 
 // Recursively highlight all called symbols. The risk of infinite recursion
@@ -303,8 +348,13 @@ function highlightAllCalledSymbols(symbol : D3Symbol, intensity : number) : void
     for(var c:number=0;c<callGraph.length;c++) {
 	if(callGraph[c].source == symbol._id) {
 	    var target : D3Symbol = findSymbolByID(callGraph[c].target);
-	    if (target.highlight < intensity) target.highlight = intensity;
-	    highlightAllCalledSymbols(target, intensity-2);
+	    callGraph[c].highlight = 1;
+	    if(target == null) {
+		console.log("Called symbol is null - possible call-in");
+	    } else {
+		if (target.highlight < intensity) target.highlight = intensity;
+		highlightAllCalledSymbols(target, intensity-2);
+	    }
 	}
     }
 }
@@ -317,8 +367,13 @@ function highlightAllCallingSymbols(symbol : D3Symbol, intensity : number) : voi
     for(var c:number=0;c<callGraph.length;c++) {
 	if(callGraph[c].target == symbol._id) {
 	    var source : D3Symbol = findSymbolByID(callGraph[c].source);
-	    if (source.highlight > intensity) source.highlight = intensity;
-	    highlightAllCallingSymbols(source, intensity+2);
+	    callGraph[c].highlight = 1;
+	    if(source == null) {
+		console.log("Calling symbol is null - possible call-in");
+	    } else {
+		if (source.highlight > intensity) source.highlight = intensity;
+		highlightAllCallingSymbols(source, intensity+2);
+	    }
 	}
     }
 }
@@ -328,12 +383,11 @@ function symbolClickCallback(n)
 {
     console.log("Click",n);
 
-    for(var s:number=0;s<symbolArray.length;s++) {
-	symbolArray[s].highlight = 0;
-    }
+
+    clearAllHighlights();
 
     var symbol : D3Symbol = findSymbolByID(n._id);
-    symbol.highlight = 10;
+    symbol.highlight = 12;
     highlightAllCalledSymbols(symbol, 10)
     highlightAllCallingSymbols(symbol, -10)
 
@@ -356,9 +410,6 @@ var graph = initGraph();
 
 var interval = null;
 
-let title = <HTMLElement> document.querySelector('h1')
-title.innerHTML = packageName;
-
 // Thing to add all the callers
 var data = [ "A", "B", "C", "D" ];
 
@@ -368,7 +419,8 @@ function setPackageLabelAttributes(selection)
 	.attr("x", 0).attr("rx", 4).attr("ry", 4)
 	.attr("y", function(d, index) { return index*40; })
 	.style("fill", "#000000")
-	.attr("width", 100);
+	.attr("width", 150)
+	.attr("onclick",function(d) { return "window.location = 'index.html?package="+d+"';" });
 }
 
 function setPackageLabelTextAttributes(selection)
@@ -376,28 +428,38 @@ function setPackageLabelTextAttributes(selection)
     selection.attr("x", 10)
 	.attr("y", function(d, index) { return index*40+20; })
 	.style("fill", "#ffffff")
-	.text(function(d) { return "Package "+d });
+	.text(function(d) { return d });
 }
 
 
-var group = d3.select(".callsIn").selectAll("rect").data(data).enter().append("g");
-
-setPackageLabelAttributes(group.append("rect"));
-
-setPackageLabelTextAttributes(group.append("text"));
-
-// And the same for calls out
-var data = [ "E", "F", "G", "H" ];
-
-var group = d3.select(".callsOut").selectAll("rect").data(data).enter().append("g");
-
-setPackageLabelAttributes(group.append("rect"));
-setPackageLabelTextAttributes(group.append("text"));
+// Read a page's GET URL variables and return them as an associative array.
+// From http://jquery-howto.blogspot.co.uk/2009/09/get-url-parameters-values-with-jquery.html
+function getUrlVars()
+{
+    var vars = [], hash;
+    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+    for(var i = 0; i < hashes.length; i++)
+    {
+	hash = hashes[i].split('=');
+	vars.push(hash[0]);
+	vars[hash[0]] = hash[1];
+    }
+    return vars;
+}
 
 function example() {
     graph = initGraph();
     symbolArray = exampleJSON;
     callGraph = exampleCalls;
     graph.data(symbolArray, callGraph);
-
+    let title = <HTMLElement> document.querySelector('h1')
+    title.innerHTML = "Example data";
 }
+
+var group = d3.select(".callsIn").selectAll("rect").data(data).enter().append("g");
+setPackageLabelAttributes(group.append("rect"));
+setPackageLabelTextAttributes(group.append("text"));
+
+var vars = getUrlVars();
+packageName = vars['package'] || "libhfr"
+var nodeid = "id:"+packageName;
