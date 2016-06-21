@@ -202,13 +202,6 @@ function database()
 		var edge = object.contains.edges[e];
 		if(localNodes[edge._source] == true && localNodes[edge._target] == true) {
 		    callGraph.push( { source: edge._source, target: edge._target } );
-		    var callerObject : number = nodeToObjectMap[edge._source]._id;
-		    if(!nodeToObjectMap[edge._target]) console.log("Warning: "+edge._target+" isn't in the object map despite being in localNodes");
-		    var calledObject : number = nodeToObjectMap[edge._target]._id;
-		    console.log("Mapping call source "+edge._source+" to object "+callerObject+" and target "+edge._target+" to object "+calledObject);
-		    if(callerObject != calledObject) {
-			objectCallGraph[callerObject] = addToSet(objectCallGraph[callerObject],calledObject);
-		    }
 		}
 		else if(localNodes[edge._source] == true && externalSyms[edge._target]>=0) {
 		    // That's a call outwards
