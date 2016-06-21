@@ -163,7 +163,7 @@ function database()
 	for(var o=0;o<pack.contains.nodes.length;o++) {
 	    var object : GraphDBNode = pack.contains.nodes[o];
 	    console.log("Recording object "+object.caption);
-	    var allNodes : {[Identifier:number]:boolean} = {};
+	    var localNodes : {[Identifier:number]:boolean} = {};
 	    var externalSyms : {[Identifier:number]:number} = {};
 	    for (var s=0;s<object.contains.nodes.length;s++) {
 		var node : GraphDBNode = object.contains.nodes[s];
@@ -181,7 +181,7 @@ function database()
 			}
 			nodeToObjectMap[node._id] = object;
 		    }
-		    allNodes[node._id] = true;
+		    localNodes[node._id] = true;
 		} else {
 		    // Possible external package?
 		    var externalPackage : string;
@@ -200,16 +200,17 @@ function database()
 	    var object = pack.contains.nodes[o];
 	    for (var e=0;e<object.contains.edges.length;e++) {
 		var edge = object.contains.edges[e];
-		if(allNodes[edge._source] == true && allNodes[edge._target] == true) {
+		if(localNodes[edge._source] == true && localNodes[edge._target] == true) {
 		    callGraph.push( { source: edge._source, target: edge._target } );
 		    var callerObject : number = nodeToObjectMap[edge._source]._id;
+		    if(!nodeToObjectMap[edge._target]) console.log("Warning: "+edge._target+" isn't in the object map despite being in localNodes");
 		    var calledObject : number = nodeToObjectMap[edge._target]._id;
 		    console.log("Mapping call source "+edge._source+" to object "+callerObject+" and target "+edge._target+" to object "+calledObject);
 		    if(callerObject != calledObject) {
 			objectCallGraph[callerObject] = addToSet(objectCallGraph[callerObject],calledObject);
 		    }
 		}
-		else if(allNodes[edge._source] == true && externalSyms[edge._target]>=0) {
+		else if(localNodes[edge._source] == true && externalSyms[edge._target]>=0) {
 		    // That's a call outwards
 		    console.log("Source symbol "+edge._source+" calls external symbol "+edge._target);
 		    callGraph.push( { source: edge._source, target: -externalSyms[edge._target] } );
@@ -226,7 +227,6 @@ function database()
 	    });
 	});
 
-	console.log("Produced object call graph: ", objectCalls);
 	graph = initGraph();
 	graph.data(symbolArray, callGraph, objectCalls);
 
@@ -244,7 +244,6 @@ function database()
 function update()
 {
     graph = initGraph();
-    console.log("Updating graph with ",symbolArray, callGraph);
     graph.data(symbolArray, callGraph);
 }
 
