@@ -677,7 +677,14 @@ var define, exports, require, module;
 			var target = lookUpNodeById(obj.target);
 			var package1OffsetY = -80;
 			var x1_control_dx : number = 256;
-
+			if (obj.source >= 0 && source == null) {
+			    console.log("Source "+obj.source+" not in the index!");
+			    return "";
+			}
+			if (obj.target >= 0 && target == null) {
+			    console.log("Source "+obj.source+" not in the index!");
+			    return "";
+			}
 			if(obj.target < 0) {
 			    console.log("Target ID is negative; presuming an external link");
 			    var x1 : number = linkXFunction(source);
