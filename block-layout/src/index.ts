@@ -150,7 +150,7 @@ var define, exports, require, module;
          * @returns {d3.tip} the tip object.
          */
         var createTooltip = function(self) {
-            var hiddenKeys = ['ROW', 'INDEX', 'COLOR', 'PARENTCOLOR', 'PARENT'],
+            var shownKeys = ['SYMBOLNAME'],
                 showKeys = self.config.showKeys;
 
             return d3.tip().attr('class', 'relationshipGraph-tip')
@@ -166,7 +166,7 @@ var define, exports, require, module;
                         var element = keys[count],
                             upperCaseKey = element.toUpperCase();
 
-                        if (!contains(hiddenKeys, upperCaseKey)) {
+                        if (contains(shownKeys, upperCaseKey)) {
                             var row = document.createElement('tr'),
                                 key = showKeys ? document.createElement('td') : null,
                                 value = document.createElement('td');
@@ -571,27 +571,33 @@ var define, exports, require, module;
 		return y;
 	    }
 
+	    function parentTextYFunction(obj, index) {
+		var y : number = parentBoxYFunction(obj,index) + parentBoxHeightFunction(obj,index)/2 + parentTextFunction(obj,index).length*2;
+		return y;
+	    }
+
 	    function parentBoxHeightFunction(obj, index) {
                 var children = Math.ceil(parentSizes[obj] / calculatedMaxChildren) * calculatedMaxChildren;
                 return 8 + Math.ceil(children / calculatedMaxChildren) * _this.config.blockSize;
 	    }
+
 	    function parentTextFunction(obj, index) {
                 return obj + ' (' + parentSizes[obj] + ')';
 	    }
+
 	    // Add new parent nodes.
             var parentGroups = [];
             for (i = 0; i < parentNodes.length; i++) {
                 parentGroups[i] = parentNodes[i].enter().append('g');
                 parentGroups[i].append('text')
                     .text(parentTextFunction)
-                    .attr('x', 8)
-                    .attr('y', parentBoxYFunction)
+                    .attr('x', 0)
+                    .attr('y', parentTextYFunction)
                     .style('text-anchor', 'start')
                     .style('fill', function(obj) {
                        return (obj.parentColor !== undefined) ? _this.config.colors[obj.parentColor] : '#000000';
                     })
                     .attr('class', 'relationshipGraph-Text')
-                    .attr('transform', 'translate(-6, ' + this.config.blockSize / 1.5 + ')');
             }
 
 	    // Add a rectangle which should enclose all objects
@@ -612,11 +618,12 @@ var define, exports, require, module;
                 previousParents = []; // helper to calculate parentBoxY
                 parentNodes[i].select('text')
                     .text(parentTextFunction)
-                    .attr('x', 8)
-                    .attr('y', parentBoxYFunction)
+                    .attr('x', 0)
+                    .attr('y', 0)
                     .style('fill', function(obj) {
                         return (obj.parentColor !== undefined) ? _this.config.colors[obj.parentColor] : '#000000';
-                    });
+                    })
+		    .attr("transform", function(obj, index) { return "translate(16,"+parentTextYFunction(obj,index)+") rotate (-90)"; });
             }
 
             // Remove deleted parent nodes.
@@ -670,28 +677,35 @@ var define, exports, require, module;
 			var x2 : number = linkXFunction(target);
 			var y1 : number = linkYFunction(source);
 			var y2 : number = linkYFunction(target);
+
+			var lineXOffset : number = 32;
+			var lineYOffset : number = 48;
+
 			var path: string = "";
+			// Start marker
+			path += " M"+(x1 + lineXOffset) + ","+(y1+lineYOffset);
+			path += " L"+(x1 + lineXOffset - 4) + ","+(y1+lineYOffset - 4);
+			path += " L"+(x1 + lineXOffset - 4) + ","+(y1+lineYOffset + 4);
+			path += " L"+(x1 + lineXOffset) + ","+(y1+lineYOffset);
 			if (y1 == y2) {
 			    if (x1 == x2) {
 				// This calls itself; ignore it
 			    } else {
-				path = "M "+(x1 + 64) + ","+(y1+32);
-				path += " C "+(x1 + 64) + ","+(y1+128);
-				path += " "+(x2 + 64) + ","+(y2+128);
-				path += " "+(x2 + 64) + ","+(y2+32);
-				path += " L"+(x2 + 64 - 4) + ","+(y2+32 - 4);
-				path += " L"+(x2 + 64 - 4) + ","+(y2+32 + 4);
-				path += " L"+(x2 + 64) + ","+(y2+32);
+				path += " C "+(x1 + lineXOffset) + ","+(y1+128);
+				path += " "+(x2 + lineXOffset) + ","+(y2+128);
+				path += " "+(x2 + lineXOffset) + ","+(y2+lineYOffset);
 			    }
 			} else {
-			    path = "M "+(x1 + 64) + ","+(y1+32);
-			    path += " C "+(x1 + 64+256) + ","+(y1+32);
-			    path += " "+(x2 + 64+256) + ","+(y2+32);
-			    path += " "+(x2 + 64) + ","+(y2+32);
-			    path += " L"+(x2 + 64 - 4) + ","+(y2+32 - 4);
-			    path += " L"+(x2 + 64 - 4) + ","+(y2+32 + 4);
-			    path += " L"+(x2 + 64) + ","+(y2+32);
+			    path += " C "+(x1 + lineXOffset+256) + ","+(y1+lineYOffset);
+			    path += " "+(x2 + lineXOffset+256) + ","+(y2+lineYOffset);
+			    path += " "+(x2 + lineXOffset) + ","+(y2+lineYOffset);
 			}
+			// End marker
+			path += " M"+(x2 + lineXOffset - 4) + ","+(y2+lineYOffset - 4);
+			path += " L"+(x2 + lineXOffset - 4) + ","+(y2+lineYOffset + 4);
+			path += " L"+(x2 + lineXOffset + 4) + ","+(y2+lineYOffset + 4);
+			path += " L"+(x2 + lineXOffset + 4) + ","+(y2+lineYOffset - 4);
+			path += " L"+(x2 + lineXOffset - 4) + ","+(y2+lineYOffset - 4);
 			return path;
 		    });
 	    }
@@ -707,7 +721,7 @@ var define, exports, require, module;
             // Update existing child nodes.
             for (i = 0; i < childrenNodes.length; i++) {
                 childrenNodes[i].transition(_this.config.transitionTime)
-                    .attr( "transform", function(obj) { var x = longestWidth + ((obj.index - 1) * _this.config.blockSize);
+                    .attr( "transform", function(obj) { var x = 32 + ((obj.index - 1) * _this.config.blockSize);
                                                         var y = nodeYFunction(obj);
                                                         return "translate ("+x+" "+y+")"; })
                     .style('fill', function(obj) {
