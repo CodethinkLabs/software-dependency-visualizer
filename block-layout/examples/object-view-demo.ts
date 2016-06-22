@@ -15,6 +15,10 @@ var exampleJSON = [
     { "symbolName": "Sym4", "parent": "klf.o", "sortIndex": 2, "_id": 13 },
 ];
 
+const objectsColWidth = 400;
+const packagesColWidth = 200;
+const packagesHeight = 40;
+
 interface Call {
     highlight?: number;
 }
@@ -110,6 +114,7 @@ function getPositionInSet<T>(set : T[], item : T) : number
 var symbolArray : D3Symbol[] = [];
 var callGraph : Call[] = [];
 var objectCalls = [];
+var externalPackages : string[]= [];
 
 function countChars(s: string, c:string) : number
 {
@@ -151,7 +156,7 @@ function database()
     symbolArray = [];
     callGraph = [];
     objectCalls = [];
-    var externalPackages : string[]= [];
+    externalPackages = [];
 
     $.getJSON('/graph/present/' + nodeid, function (node_info) {
 
@@ -220,15 +225,7 @@ function database()
 	    });
 	});
 
-	graph = initGraph();
-	graph.data(symbolArray, callGraph, objectCalls);
-
-	var calloutNodes = d3.select(".callsOut").selectAll("rect").data(externalPackages);
-	var group = calloutNodes.enter().append("g");
-	setPackageLabelAttributes(group.append("rect"));
-	setPackageLabelTextAttributes(group.append("text"));
-
-	calloutNodes.data(externalPackages);
+        update();
     });
     let title = <HTMLElement> document.querySelector('h1')
     title.innerHTML = packageName;
@@ -237,7 +234,14 @@ function database()
 function update()
 {
     graph = initGraph();
-    graph.data(symbolArray, callGraph);
+    graph.data(symbolArray, callGraph, objectCalls);
+
+    var calloutNodes = d3.select(".callsOut").selectAll("rect").data(externalPackages);
+    var group = calloutNodes.enter().append("g");
+    setPackageLabelAttributes(group.append("rect"));
+    setPackageLabelTextAttributes(group.append("text"));
+
+    calloutNodes.data(externalPackages);
 }
 
 var blockSize : number = 64;
@@ -267,11 +271,15 @@ function nodeYFunction (obj) {
 }
 
 function linkXFunction (obj) {
-    return nodeXFunction (obj) + obj.col * 350;
+    return nodeXFunction (obj) + packagesColWidth + obj.col * objectsColWidth;
 }
 
 function linkYFunction (obj) {
     return nodeYFunction (obj);
+}
+
+function targetLinkXFunction(colsNumber) {
+    return  objectsColWidth * colsNumber + packagesColWidth;
 }
 
 function nodeTranslationFunction (obj) { var x = nodeXFunction(obj);
@@ -415,9 +423,9 @@ var data = [ "A", "B", "C", "D" ];
 
 function setPackageLabelAttributes(selection)
 {
-    selection.attr("height", function(d) { return 32; })
+    selection.attr("height", function(d) { return packagesHeight - 6; })
 	.attr("x", 0).attr("rx", 4).attr("ry", 4)
-	.attr("y", function(d, index) { return index*40; })
+	.attr("y", function(d, index) { return index*packagesHeight; })
 	.style("fill", "#000000")
 	.attr("width", 150)
 	.attr("onclick",function(d) { return "window.location = 'index.html?package="+d+"';" });
@@ -426,7 +434,7 @@ function setPackageLabelAttributes(selection)
 function setPackageLabelTextAttributes(selection)
 {
     selection.attr("x", 10)
-	.attr("y", function(d, index) { return index*40+20; })
+	.attr("y", function(d, index) { return index*packagesHeight+packagesHeight/2; })
 	.style("fill", "#ffffff")
 	.text(function(d) { return d });
 }

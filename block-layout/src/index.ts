@@ -208,17 +208,31 @@ var define, exports, require, module;
         // Create the svg element that will contain the graph.
         this.svg = this.config.selection
             .append('svg')
-            .attr('width', '800')
+            .attr('width', this.config.columns*objectsColWidth + packagesColWidth*2)
             .attr('height', '500')
             .attr('style', 'display: block');
 
+        // Create Packages group for callers
+        this.callers = this.svg
+            .append('g')
+            .attr('class', 'callsIn')
+            .attr('transform', 'translate(0, 0)');
+
+        // Create central columns for Objects
         this.cols = [];
         for ( var i = 0; i < this.config.columns; i++ ) {
             this.cols.push(this.svg
                 .append('g')
-                .attr('transform', 'translate(' + i * 350 +', 0)'));
+                .attr('transform', 'translate(' + (packagesColWidth + i * objectsColWidth) +', 0)'));
         }
 
+        // Create Packages group for called
+        this.called = this.svg
+            .append('g')
+            .attr('class', 'callsOut')
+            .attr('transform', 'translate(' + (packagesColWidth + this.config.columns * objectsColWidth) +', 0)');
+
+        // Create group for Links
         this.links = this.svg
             .append('g')
             .attr('transform', 'translate(0, 0)');
@@ -682,15 +696,15 @@ var define, exports, require, module;
 			    return "";
 			}
 			if (obj.target >= 0 && target == null) {
-			    console.log("Source "+obj.source+" not in the index!");
+			    console.log("Target "+obj.target+" not in the index!");
 			    return "";
 			}
 			if(obj.target < 0) {
 			    console.log("Target ID is negative; presuming an external link");
 			    var x1 : number = linkXFunction(source);
-			    var x2 : number = 500;
+			    var x2 : number = targetLinkXFunction(_this.config.columns);
 			    var y1 : number = linkYFunction(source);
-			    var y2 : number = package1OffsetY + obj.target*-32;
+			    var y2 : number = package1OffsetY + obj.target*-packagesHeight;
 			    var x2_control_dx : number = -128;
 			} else {
 			    var x1 : number = linkXFunction(source);
