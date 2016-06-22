@@ -212,6 +212,28 @@ var define, exports, require, module;
             .attr('height', '500')
             .attr('style', 'display: block');
 
+
+        var markers_data = [
+            { id: 0, name: 'arrow', path: 'M 0,0 m -5,-5 L 5,0 L -5,5 Z', viewbox: '-5 -5 10 10', refX: '5', color: '#303030'},
+        ]
+
+        var defs = this.svg.append('defs')
+        var markers = defs.selectAll('marker')
+        .data(markers_data)
+        .enter()
+        .append('svg:marker')
+          .attr('id', function(d){ return 'marker_' + d.name})
+          .attr('markerHeight', 7)
+          .attr('markerWidth', 7)
+          .attr('markerUnits', 'strokeWidth')
+          .attr('orient', 'auto')
+          .attr('refX', function(d){ return d.refX })
+          .attr('refY', function(d){ return d.refY })
+          .attr('viewBox', function(d){ return d.viewbox })
+          .append('svg:path')
+            .attr('d', function(d){ return d.path })
+            .attr('fill', function(d) { return d.color });
+
         // Create Packages group for callers
         this.callers = this.svg
             .append('g')
@@ -742,15 +764,10 @@ var define, exports, require, module;
 			    path += " "+(x2 + lineXOffset+x2_control_dx) + ","+(y2+lineYOffset);
 			    path += " "+(x2 + lineXOffset) + ","+(y2+lineYOffset);
 			}
-			// End marker
-			path += " M"+(x2 + lineXOffset - 4) + ","+(y2+lineYOffset - 4);
-			path += " L"+(x2 + lineXOffset - 4) + ","+(y2+lineYOffset + 4);
-			path += " L"+(x2 + lineXOffset + 4) + ","+(y2+lineYOffset + 4);
-			path += " L"+(x2 + lineXOffset + 4) + ","+(y2+lineYOffset - 4);
-			path += " L"+(x2 + lineXOffset - 4) + ","+(y2+lineYOffset - 4);
 			return path;
-		    }).
-		    attr('stroke', function(obj) {
+		    })
+                    .attr("marker-end", "url(#marker_arrow)")
+                    .attr('stroke', function(obj) {
 			if (obj.highlight == null) return "#444";
 			var val : string = (10-obj.highlight*8).toString(16);
 			return "#"+val+val+val;
