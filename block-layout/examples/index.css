@@ -1,5 +1,5 @@
 .mini-layout-body {
-    background-color: #dceaf4;
+    background-color: #ccc;
     display: inline-block;
     float: none;
     width: 50%;
@@ -19,12 +19,6 @@
     width: 25%;
     white-space: nowrap;
     overflow: hidden;
-}
-
-.mini-layout-object {
-    background-color: #ccc;
-    height: 900px;
-    overflow: auto;
 }
 
 .callsIn {
