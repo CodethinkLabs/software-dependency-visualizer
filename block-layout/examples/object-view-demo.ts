@@ -15,7 +15,7 @@ var exampleJSON = [
     { "symbolName": "Sym4", "parent": "klf.o", "sortIndex": 2, "_id": 13 },
 ];
 
-const objectsColWidth = 350;
+const objectsColWidth = 400;
 const packagesColWidth = 200;
 const packagesHeight = 40;
 
