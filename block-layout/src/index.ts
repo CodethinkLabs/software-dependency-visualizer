@@ -208,7 +208,7 @@ var define, exports, require, module;
         // Create the svg element that will contain the graph.
         this.svg = this.config.selection
             .append('svg')
-            .attr('width', '1400')
+            .attr('width', this.config.columns*objectsColWidth + packagesColWidth*2)
             .attr('height', '500')
             .attr('style', 'display: block');
 
