@@ -114,6 +114,7 @@ function getPositionInSet<T>(set : T[], item : T) : number
 var symbolArray : D3Symbol[] = [];
 var callGraph : Call[] = [];
 var objectCalls = [];
+var externalPackages : string[]= [];
 
 function countChars(s: string, c:string) : number
 {
@@ -155,7 +156,7 @@ function database()
     symbolArray = [];
     callGraph = [];
     objectCalls = [];
-    var externalPackages : string[]= [];
+    externalPackages = [];
 
     $.getJSON('/graph/present/' + nodeid, function (node_info) {
 
@@ -224,15 +225,7 @@ function database()
 	    });
 	});
 
-	graph = initGraph();
-	graph.data(symbolArray, callGraph, objectCalls);
-
-	var calloutNodes = d3.select(".callsOut").selectAll("rect").data(externalPackages);
-	var group = calloutNodes.enter().append("g");
-	setPackageLabelAttributes(group.append("rect"));
-	setPackageLabelTextAttributes(group.append("text"));
-
-	calloutNodes.data(externalPackages);
+        update();
     });
     let title = <HTMLElement> document.querySelector('h1')
     title.innerHTML = packageName;
@@ -241,7 +234,14 @@ function database()
 function update()
 {
     graph = initGraph();
-    graph.data(symbolArray, callGraph);
+    graph.data(symbolArray, callGraph, objectCalls);
+
+    var calloutNodes = d3.select(".callsOut").selectAll("rect").data(externalPackages);
+    var group = calloutNodes.enter().append("g");
+    setPackageLabelAttributes(group.append("rect"));
+    setPackageLabelTextAttributes(group.append("text"));
+
+    calloutNodes.data(externalPackages);
 }
 
 var blockSize : number = 64;
