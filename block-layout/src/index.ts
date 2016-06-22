@@ -696,7 +696,7 @@ var define, exports, require, module;
 			    return "";
 			}
 			if (obj.target >= 0 && target == null) {
-			    console.log("Source "+obj.source+" not in the index!");
+			    console.log("Target "+obj.target+" not in the index!");
 			    return "";
 			}
 			if(obj.target < 0) {
