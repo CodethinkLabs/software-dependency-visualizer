@@ -267,7 +267,7 @@ function nodeYFunction (obj) {
 }
 
 function linkXFunction (obj) {
-    return nodeXFunction (obj) + obj.col * 350;
+    return nodeXFunction (obj) + 200 + obj.col * 350;
 }
 
 function linkYFunction (obj) {

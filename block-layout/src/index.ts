@@ -208,17 +208,31 @@ var define, exports, require, module;
         // Create the svg element that will contain the graph.
         this.svg = this.config.selection
             .append('svg')
-            .attr('width', '800')
+            .attr('width', '1400')
             .attr('height', '500')
             .attr('style', 'display: block');
 
+        // Create Packages group for callers
+        this.callers = this.svg
+            .append('g')
+            .attr('class', 'callsIn')
+            .attr('transform', 'translate(0, 0)');
+
+        // Create central columns for Objects
         this.cols = [];
         for ( var i = 0; i < this.config.columns; i++ ) {
             this.cols.push(this.svg
                 .append('g')
-                .attr('transform', 'translate(' + i * 350 +', 0)'));
+                .attr('transform', 'translate(' + (200 + i * 350) +', 0)'));
         }
 
+        // Create Packages group for called
+        this.called = this.svg
+            .append('g')
+            .attr('class', 'callsOut')
+            .attr('transform', 'translate(' + (200 + this.config.columns * 350) +', 0)');
+
+        // Create group for Links
         this.links = this.svg
             .append('g')
             .attr('transform', 'translate(0, 0)');
