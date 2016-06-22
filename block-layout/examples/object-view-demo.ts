@@ -15,6 +15,9 @@ var exampleJSON = [
     { "symbolName": "Sym4", "parent": "klf.o", "sortIndex": 2, "_id": 13 },
 ];
 
+const objectsColWidth = 350;
+const packagesColWidth = 200;
+
 interface Call {
     highlight?: number;
 }
@@ -267,7 +270,7 @@ function nodeYFunction (obj) {
 }
 
 function linkXFunction (obj) {
-    return nodeXFunction (obj) + 200 + obj.col * 350;
+    return nodeXFunction (obj) + packagesColWidth + obj.col * objectsColWidth;
 }
 
 function linkYFunction (obj) {
@@ -275,7 +278,7 @@ function linkYFunction (obj) {
 }
 
 function targetLinkXFunction(colsNumber) {
-    return  350 * colsNumber + 200;
+    return  objectsColWidth * colsNumber + packagesColWidth;
 }
 
 function nodeTranslationFunction (obj) { var x = nodeXFunction(obj);

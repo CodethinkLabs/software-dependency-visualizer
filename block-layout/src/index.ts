@@ -223,14 +223,14 @@ var define, exports, require, module;
         for ( var i = 0; i < this.config.columns; i++ ) {
             this.cols.push(this.svg
                 .append('g')
-                .attr('transform', 'translate(' + (200 + i * 350) +', 0)'));
+                .attr('transform', 'translate(' + (packagesColWidth + i * objectsColWidth) +', 0)'));
         }
 
         // Create Packages group for called
         this.called = this.svg
             .append('g')
             .attr('class', 'callsOut')
-            .attr('transform', 'translate(' + (200 + this.config.columns * 350) +', 0)');
+            .attr('transform', 'translate(' + (packagesColWidth + this.config.columns * objectsColWidth) +', 0)');
 
         // Create group for Links
         this.links = this.svg
