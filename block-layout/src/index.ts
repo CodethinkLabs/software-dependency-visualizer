@@ -702,7 +702,7 @@ var define, exports, require, module;
 			if(obj.target < 0) {
 			    console.log("Target ID is negative; presuming an external link");
 			    var x1 : number = linkXFunction(source);
-			    var x2 : number = 500;
+			    var x2 : number = targetLinkXFunction(_this.config.columns);
 			    var y1 : number = linkYFunction(source);
 			    var y2 : number = package1OffsetY + obj.target*-32;
 			    var x2_control_dx : number = -128;

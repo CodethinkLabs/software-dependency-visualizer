@@ -274,6 +274,10 @@ function linkYFunction (obj) {
     return nodeYFunction (obj);
 }
 
+function targetLinkXFunction(colsNumber) {
+    return  350 * colsNumber + 200;
+}
+
 function nodeTranslationFunction (obj) { var x = nodeXFunction(obj);
 					 var y = nodeYFunction(obj);
 					 return "translate ("+x+" "+y+")"; }
