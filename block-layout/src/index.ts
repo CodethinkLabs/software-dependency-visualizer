@@ -212,6 +212,29 @@ var define, exports, require, module;
             .attr('height', '500')
             .attr('style', 'display: block');
 
+
+        var markers_data = [
+            { id: 0, name: 'arrow', path: 'M 0,0 m -5,-5 L 5,0 L -5,5 Z', viewbox: '-5 -5 10 10', refX: '5', color: '#303030'},
+            { id: 1, name: 'circle', path: 'M 0, 0  m -5, 0  a 5,5 0 1,0 10,0  a 5,5 0 1,0 -10,0', viewbox: '-6 -6 12 12' },
+        ]
+
+        var defs = this.svg.append('defs')
+        var markers = defs.selectAll('marker')
+        .data(markers_data)
+        .enter()
+        .append('svg:marker')
+          .attr('id', function(d){ return 'marker_' + d.name})
+          .attr('markerHeight', 7)
+          .attr('markerWidth', 7)
+          .attr('markerUnits', 'strokeWidth')
+          .attr('orient', 'auto')
+          .attr('refX', function(d){ return d.refX })
+          .attr('refY', function(d){ return d.refY })
+          .attr('viewBox', function(d){ return d.viewbox })
+          .append('svg:path')
+            .attr('d', function(d){ return d.path })
+            .attr('fill', function(d) { return d.color });
+
         // Create Packages group for callers
         this.callers = this.svg
             .append('g')
@@ -691,6 +714,9 @@ var define, exports, require, module;
 			var target = lookUpNodeById(obj.target);
 			var package1OffsetY = -80;
 			var x1_control_dx : number = 256;
+			var lineXOffset : number = 32;
+			var lineYOffset : number = 48;
+
 			if (obj.source >= 0 && source == null) {
 			    console.log("Source "+obj.source+" not in the index!");
 			    return "";
@@ -702,7 +728,9 @@ var define, exports, require, module;
 			if(obj.target < 0) {
 			    console.log("Target ID is negative; presuming an external link");
 			    var x1 : number = linkXFunction(source);
-			    var x2 : number = targetLinkXFunction(_this.config.columns);
+                            // TODO: Real fix would be to set lineXOffset to 0, but that will change
+                            // the offset of the starting point.
+			    var x2 : number = targetLinkXFunction(_this.config.columns) - lineXOffset;
 			    var y1 : number = linkYFunction(source);
 			    var y2 : number = package1OffsetY + obj.target*-packagesHeight;
 			    var x2_control_dx : number = -128;
@@ -714,18 +742,18 @@ var define, exports, require, module;
 			    var x2_control_dx : number = 256;
 			}
 
-			var lineXOffset : number = 32;
-			var lineYOffset : number = 48;
 
 			var path: string = "";
-			// Start marker
-			path += " M"+(x1 + lineXOffset) + ","+(y1+lineYOffset);
-			path += " L"+(x1 + lineXOffset - 4) + ","+(y1+lineYOffset - 4);
-			path += " L"+(x1 + lineXOffset - 4) + ","+(y1+lineYOffset + 4);
-			path += " L"+(x1 + lineXOffset) + ","+(y1+lineYOffset);
+                        path += " M"+(x1 + lineXOffset) + ","+(y1+lineYOffset);
 			if (y1 == y2) {
 			    if (x1 == x2) {
-				// This calls itself; ignore it
+                                path += " C"+(x1 + lineXOffset + 10) + ","+(y1+lineYOffset + 20);
+                                path += " "+(x1 + lineXOffset + 20) + ","+(y1+lineYOffset + 10);
+                                path += " "+(x1 + lineXOffset + 20) + ","+(y1+lineYOffset);
+                                path += " C "+(x1 + lineXOffset + 20) + ","+(y1+lineYOffset - 10);
+                                path += " "+(x1 + lineXOffset + 10) + ","+(y1+lineYOffset - 20);
+                                path += " "+(x1 + lineXOffset) + ","+(y1+lineYOffset);
+                                return path;
 			    } else {
 				path += " C "+(x1 + lineXOffset) + ","+(y1+128);
 				path += " "+(x2 + lineXOffset) + ","+(y2+128);
@@ -736,15 +764,11 @@ var define, exports, require, module;
 			    path += " "+(x2 + lineXOffset+x2_control_dx) + ","+(y2+lineYOffset);
 			    path += " "+(x2 + lineXOffset) + ","+(y2+lineYOffset);
 			}
-			// End marker
-			path += " M"+(x2 + lineXOffset - 4) + ","+(y2+lineYOffset - 4);
-			path += " L"+(x2 + lineXOffset - 4) + ","+(y2+lineYOffset + 4);
-			path += " L"+(x2 + lineXOffset + 4) + ","+(y2+lineYOffset + 4);
-			path += " L"+(x2 + lineXOffset + 4) + ","+(y2+lineYOffset - 4);
-			path += " L"+(x2 + lineXOffset - 4) + ","+(y2+lineYOffset - 4);
 			return path;
-		    }).
-		    attr('stroke', function(obj) {
+		    })
+                    .attr("marker-start", "url(#marker_circle)")
+                    .attr("marker-end", "url(#marker_arrow)")
+                    .attr('stroke', function(obj) {
 			if (obj.highlight == null) return "#444";
 			var val : string = (10-obj.highlight*8).toString(16);
 			return "#"+val+val+val;
