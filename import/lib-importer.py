@@ -56,10 +56,10 @@ def scanFile(directory, filename):
             if currentObject not in objectSymbols: objectSymbols[currentObject] = []
             continue
         m = re.match('^\s+(\S+) (\S+)$',l) # Plain symbol with no call
-        if m and symbolType != "local defs":
+        if m:
             symbol = m.group(1)
             defType = m.group(2)
-            if defType[0].lower() == 't':
+            if defType[0].lower() == 't' and symbolType != "local defs":
                 if symbolType == "defs" or symbolType == "local defs":
                     if symbol not in symbolCalls:
                         symbolCalls[symbol] = []
@@ -67,12 +67,12 @@ def scanFile(directory, filename):
                     objectSymbols[currentObject].append(symbol)
             elif defType[0].lower() == 'd': # Data symbol, should be ignored
                 dataSymbols[symbol] = 1
+            print("Recording symbol %s of type %s\n"%(symbol,defType))
         m = re.match('^\s+(\S+) (\S+), caller: (\S+)$',l) # A call from a symbol in our object
         if m:
             calledSymbol = m.group(1)
             callingSymbol = m.group(3)
-            if calledSymbol in dataSymbols: continue
-
+            if callingSymbol in dataSymbols or calledSymbol in dataSymbols: continue
             if callingSymbol not in symbolCalls: symbolCalls[callingSymbol] = []
 
             if calledSymbol not in index:
@@ -80,8 +80,6 @@ def scanFile(directory, filename):
             else:
                 calledPackageName = index[calledSymbol]
                 callDest = "id:"+calledPackageName+":"+demangle(calledSymbol)
-
-            sys.stderr.write("Updating calls for %s\n"%callingSymbol)
             symbolCalls[callingSymbol].append(callDest)
             objectSymbols[currentObject].append(callingSymbol)
 
@@ -94,7 +92,6 @@ def scanFile(directory, filename):
             if symbol=="":
                 print("Zero-length symbol found in objectContents for "+objectName)
                 exit(1)
-            sys.stderr.write("Looking up calls for %s\n"%demangle(symbol))
             symbolYaml = { '@id': "id:"+packageName+":"+objectName+":"+demangle(symbol), 'name': demangle(symbol), '@type':'sw:Symbol', 'calls': symbolCalls[symbol] }
             obj['contains'].append(symbolYaml)
         yamlRoot['@graph']['contains'].append(obj)
