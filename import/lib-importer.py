@@ -44,18 +44,19 @@ def scanFile(directory, filename):
     symbolType = None
     symbolCalls = {}
     objectSymbols = {}
+    dataSymbols = {}
     for l in parserResult.splitlines():
         m = re.match('^(defs|local defs|undefs|weak defs|local undefs):\s*$',l)
         if(m):
             symbolType = m.group(1)
             continue
         m = re.match('^\s+(\S+).o\s*$',l) # Object name
-        if(m):
+        if m:
             currentObject = m.group(1)
             if currentObject not in objectSymbols: objectSymbols[currentObject] = []
             continue
         m = re.match('^\s+(\S+) (\S+)$',l) # Plain symbol with no call
-        if(m):
+        if m and symbolType != "local defs":
             symbol = m.group(1)
             defType = m.group(2)
             if defType[0].lower() == 't':
@@ -64,10 +65,14 @@ def scanFile(directory, filename):
                         symbolCalls[symbol] = []
                         sys.stderr.write("Updating calls for %s\n"%symbol)
                     objectSymbols[currentObject].append(symbol)
-        m = re.match('^\s+(\S+) (\S+), caller: (\S+)$',l) # Plain symbol with no call
-        if(m):
+            elif defType[0].lower() == 'd': # Data symbol, should be ignored
+                dataSymbols[symbol] = 1
+        m = re.match('^\s+(\S+) (\S+), caller: (\S+)$',l) # A call from a symbol in our object
+        if m:
             calledSymbol = m.group(1)
             callingSymbol = m.group(3)
+            if calledSymbol in dataSymbols: continue
+
             if callingSymbol not in symbolCalls: symbolCalls[callingSymbol] = []
 
             if calledSymbol not in index:
