@@ -215,6 +215,7 @@ var define, exports, require, module;
 
         var markers_data = [
             { id: 0, name: 'arrow', path: 'M 0,0 m -5,-5 L 5,0 L -5,5 Z', viewbox: '-5 -5 10 10', refX: '5', color: '#303030'},
+            { id: 1, name: 'circle', path: 'M 0, 0  m -5, 0  a 5,5 0 1,0 10,0  a 5,5 0 1,0 -10,0', viewbox: '-6 -6 12 12' },
         ]
 
         var defs = this.svg.append('defs')
@@ -740,11 +741,7 @@ var define, exports, require, module;
 			var lineYOffset : number = 48;
 
 			var path: string = "";
-			// Start marker
-			path += " M"+(x1 + lineXOffset) + ","+(y1+lineYOffset);
-			path += " L"+(x1 + lineXOffset - 4) + ","+(y1+lineYOffset - 4);
-			path += " L"+(x1 + lineXOffset - 4) + ","+(y1+lineYOffset + 4);
-			path += " L"+(x1 + lineXOffset) + ","+(y1+lineYOffset);
+                        path += " M"+(x1 + lineXOffset) + ","+(y1+lineYOffset);
 			if (y1 == y2) {
 			    if (x1 == x2) {
                                 path += " C"+(x1 + lineXOffset + 10) + ","+(y1+lineYOffset + 20);
@@ -766,6 +763,7 @@ var define, exports, require, module;
 			}
 			return path;
 		    })
+                    .attr("marker-start", "url(#marker_circle)")
                     .attr("marker-end", "url(#marker_arrow)")
                     .attr('stroke', function(obj) {
 			if (obj.highlight == null) return "#444";
