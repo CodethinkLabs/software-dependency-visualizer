@@ -714,6 +714,9 @@ var define, exports, require, module;
 			var target = lookUpNodeById(obj.target);
 			var package1OffsetY = -80;
 			var x1_control_dx : number = 256;
+			var lineXOffset : number = 32;
+			var lineYOffset : number = 48;
+
 			if (obj.source >= 0 && source == null) {
 			    console.log("Source "+obj.source+" not in the index!");
 			    return "";
@@ -725,7 +728,9 @@ var define, exports, require, module;
 			if(obj.target < 0) {
 			    console.log("Target ID is negative; presuming an external link");
 			    var x1 : number = linkXFunction(source);
-			    var x2 : number = targetLinkXFunction(_this.config.columns);
+                            // TODO: Real fix would be to set lineXOffset to 0, but that will change
+                            // the offset of the starting point.
+			    var x2 : number = targetLinkXFunction(_this.config.columns) - lineXOffset;
 			    var y1 : number = linkYFunction(source);
 			    var y2 : number = package1OffsetY + obj.target*-packagesHeight;
 			    var x2_control_dx : number = -128;
@@ -737,8 +742,6 @@ var define, exports, require, module;
 			    var x2_control_dx : number = 256;
 			}
 
-			var lineXOffset : number = 32;
-			var lineYOffset : number = 48;
 
 			var path: string = "";
                         path += " M"+(x1 + lineXOffset) + ","+(y1+lineYOffset);
