@@ -60,7 +60,7 @@ def scanFile(directory, filename):
             symbol = m.group(1)
             defType = m.group(2)
             if defType[0].lower() == 't' and symbolType != "local defs":
-                if symbolType == "defs" or symbolType == "local defs":
+                if symbolType == "defs":
                     if symbol not in symbolCalls:
                         symbolCalls[symbol] = []
                         sys.stderr.write("Updating calls for %s\n"%symbol)
