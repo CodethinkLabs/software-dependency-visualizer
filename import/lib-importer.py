@@ -30,6 +30,91 @@ def demangle(mangled):
     else:
         return mangled
 
+class ParseLibParser(object):
+    def __init__(self, packageName):
+        # The section we're currently processing (defs, undefs etc)
+        self.symbolType = None
+
+        #For each symbol, an array of the symbols it calls
+        self.symbolCalls = {}
+
+        # For each object, an array of the symbols it contains
+        self.objectSymbols = {}
+
+        # dataSymbols is a set of all the symbols which
+        # are data rather than code (value is meaningless)
+        self.dataSymbols = {}
+
+        self.currentObject = None
+        self.packageName = packageName
+
+    def processPlainSymbol(self, symbol, defType):
+        if defType[0].lower() == 't' and self.symbolType != "local defs":
+            if self.symbolType == "defs": # Um
+                if symbol not in self.symbolCalls:
+                    self.symbolCalls[symbol] = []
+                    self.objectSymbols[self.currentObject].append(symbol)
+                    print("Symbol added via plan definition: "+symbol)
+
+        elif defType[0].lower() == 'd': # Data symbol, should be ignored
+            self.dataSymbols[symbol] = 1
+
+    def processCallSymbols(self, calledSymbol, callingSymbol):
+        global index
+        if callingSymbol in self.dataSymbols or calledSymbol in self.dataSymbols: return
+        if callingSymbol not in self.symbolCalls: self.symbolCalls[callingSymbol] = []
+        if calledSymbol not in index:
+            callDest = "NULL:"+demangle(calledSymbol)
+        else:
+            calledPackageName = index[calledSymbol]
+            callDest = "id:"+calledPackageName+":"+demangle(calledSymbol)
+        self.symbolCalls[callingSymbol].append(callDest)
+        print("Symbol added via call: "+callingSymbol)
+        if callingSymbol not in self.objectSymbols[self.currentObject]:
+            self.objectSymbols[self.currentObject].append(callingSymbol)
+
+    def parse(self, text):
+        for l in text.splitlines():
+            m = re.match('^(defs|local defs|undefs|weak defs|local undefs):\s*$',l)
+            if(m):
+                self.symbolType = m.group(1)
+                continue
+            m = re.match('^\s+(\S+).o\s*$',l) # Object name
+            if m:
+                self.currentObject = m.group(1)
+                if self.currentObject not in self.objectSymbols: self.objectSymbols[self.currentObject] = []
+                continue
+            m = re.match('^\s+(\S+) (\S+)$',l) # Plain symbol with no call
+            if m:
+                self.processPlainSymbol(symbol = m.group(1), defType = m.group(2))
+                continue
+            m = re.match('^\s+(\S+) (\S+), caller: (\S+)$',l) # A call from a symbol in our object
+            if m:
+                self.processCallSymbols(calledSymbol = m.group(1), callingSymbol = m.group(3))
+
+    def getYaml(self):
+        package = {'contains': [], '@id': "id:"+self.packageName,
+                   '@type':'sw:Package', 'name': self.packageName }
+        yamlRoot = { '@context': ['http://localhost:8000/context.jsonld'],
+                     '@graph': package }
+
+        for (objectName,objectContents) in self.objectSymbols.items():
+            objectIdentifier = "id:"+self.packageName+":"+objectName
+            obj = { '@id:': objectIdentifier, '@type': 'sw:Object',
+                    'name': objectName, 'contains': [] }
+            for symbol in objectContents:
+                if symbol=="":
+                    print("Zero-length symbol found in objectContents for "+objectName)
+                    exit(1)
+                symbolIdentifier = objectIdentifier+":"+demangle(symbol)
+                symbolYaml = { '@id': symbolIdentifier,
+                               'name': demangle(symbol),
+                               '@type':'sw:Symbol',
+                               'calls': self.symbolCalls[symbol] }
+                obj['contains'].append(symbolYaml)
+            package['contains'].append(obj)
+        return yaml.dump(yamlRoot)
+
 def scanFile(directory, filename):
     global index
     print("Scanning file "+os.path.join(directory, filename))
@@ -37,66 +122,15 @@ def scanFile(directory, filename):
     packageName = filename
     if packageName.startswith("calls."): packageName = packageName[6:]
     if packageName.endswith(".a.cache"): packageName = packageName[:-8]
-    yamlFile = open(packageName+".yaml", "wt")
 
     parserResult = subprocess.check_output([parser, os.path.join(directory, filename)], stdin=None).decode("utf-8")
     print("Parser returned %d bytes"%len(parserResult))
-    symbolType = None
-    symbolCalls = {}
-    objectSymbols = {}
-    dataSymbols = {}
-    for l in parserResult.splitlines():
-        m = re.match('^(defs|local defs|undefs|weak defs|local undefs):\s*$',l)
-        if(m):
-            symbolType = m.group(1)
-            continue
-        m = re.match('^\s+(\S+).o\s*$',l) # Object name
-        if m:
-            currentObject = m.group(1)
-            if currentObject not in objectSymbols: objectSymbols[currentObject] = []
-            continue
-        m = re.match('^\s+(\S+) (\S+)$',l) # Plain symbol with no call
-        if m:
-            symbol = m.group(1)
-            defType = m.group(2)
-            if defType[0].lower() == 't' and symbolType != "local defs":
-                if symbolType == "defs":
-                    if symbol not in symbolCalls:
-                        symbolCalls[symbol] = []
-                        sys.stderr.write("Updating calls for %s\n"%symbol)
-                    objectSymbols[currentObject].append(symbol)
-            elif defType[0].lower() == 'd': # Data symbol, should be ignored
-                dataSymbols[symbol] = 1
-            print("Recording symbol %s of type %s\n"%(symbol,defType))
-        m = re.match('^\s+(\S+) (\S+), caller: (\S+)$',l) # A call from a symbol in our object
-        if m:
-            calledSymbol = m.group(1)
-            callingSymbol = m.group(3)
-            if callingSymbol in dataSymbols or calledSymbol in dataSymbols: continue
-            if callingSymbol not in symbolCalls: symbolCalls[callingSymbol] = []
+    parser = ParseLibParser(packageName)
+    parser.parse(parserResult)
+    yaml = parser.getYaml()
 
-            if calledSymbol not in index:
-                callDest = "NULL:"+demangle(calledSymbol)
-            else:
-                calledPackageName = index[calledSymbol]
-                callDest = "id:"+calledPackageName+":"+demangle(calledSymbol)
-            symbolCalls[callingSymbol].append(callDest)
-            objectSymbols[currentObject].append(callingSymbol)
-
-    package = {'contains': [], '@id': "id:"+packageName, '@type':'sw:Package', 'name': packageName }
-    yamlRoot = { '@context': ['http://localhost:8000/context.jsonld'], '@graph': package }
-
-    for (objectName,objectContents) in objectSymbols.items():
-        obj = { '@id:': "id:"+packageName+":"+objectName, '@type': 'sw:Object', 'name': objectName, 'contains': [] }
-        for symbol in objectContents:
-            if symbol=="":
-                print("Zero-length symbol found in objectContents for "+objectName)
-                exit(1)
-            symbolYaml = { '@id': "id:"+packageName+":"+objectName+":"+demangle(symbol), 'name': demangle(symbol), '@type':'sw:Symbol', 'calls': symbolCalls[symbol] }
-            obj['contains'].append(symbolYaml)
-        yamlRoot['@graph']['contains'].append(obj)
-
-    yamlFile.write(yaml.dump(yamlRoot))
+    yamlFile = open(packageName+".yaml", "wt")
+    yamlFile.write(yaml)
     yamlFile.close()
 
 def scanDirectory(directory):
@@ -115,6 +149,7 @@ def main():
         print("PARSE_LIB must be set to a valid cache file parser.")
         exit(1)
 
+    # Load the index
     indexfile = open("alldefs_sorted_uniq")
     index = {}
 
