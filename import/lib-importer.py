@@ -115,7 +115,7 @@ class ParseLibParser(object):
                 symbolYaml = { '@id': symbolIdentifier,
                                'name': demangle(symbol),
                                '@type':'sw:Symbol',
-                               'calls': self.symbolCalls[symbol] }
+                               'calls': list(map(demangle, self.symbolCalls[symbol])) }
                 obj['contains'].append(symbolYaml)
             package['contains'].append(obj)
         return yaml.dump(yamlRoot)
