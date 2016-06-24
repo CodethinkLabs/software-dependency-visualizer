@@ -52,13 +52,11 @@ class ParseLibParser(object):
         self.packageName = packageName
 
     def processPlainSymbol(self, symbol, defType):
-        if defType[0].lower() == 't' and self.symbolType != "local defs":
-            if self.symbolType == "defs": # Um
-                if symbol not in self.symbolCalls:
-                    self.symbolCalls[symbol] = []
-                    self.objectSymbols[self.currentObject].append(symbol)
-                    print("Symbol added via plan definition: "+symbol)
-
+        if defType[0].lower() == 't' and self.symbolType == "defs":
+            if symbol not in self.symbolCalls:
+                self.symbolCalls[symbol] = []
+                self.objectSymbols[self.currentObject].append(symbol)
+                print("Symbol added via plan definition: "+symbol)
         elif defType[0].lower() == 'd': # Data symbol, should be ignored
             self.dataSymbols[symbol] = 1
 
