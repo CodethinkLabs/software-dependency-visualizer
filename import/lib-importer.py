@@ -8,6 +8,9 @@ import yaml
 
 index = {}
 
+# Improved 'libcache' data importer. Turns .a.cache files into YAML by
+# invoking the proprietary parser directly.
+
 # demangles SunPro mangled names - partially. Arguments aren't parsed yet.
 def demangle(mangled):
     if mangled.startswith("__1c"):
