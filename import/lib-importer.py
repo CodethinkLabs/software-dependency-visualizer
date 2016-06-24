@@ -48,31 +48,33 @@ class ParseLibParser(object):
         # are data rather than code (value is meaningless)
         self.dataSymbols = {}
 
-        self.currentObject = None
+        self.currentObjectName = None
         self.packageName = packageName
 
     def processPlainSymbol(self, symbol, defType):
         if defType[0].lower() == 't' and self.symbolType == "defs":
             if symbol not in self.symbolCalls:
                 self.symbolCalls[symbol] = []
-                self.objectSymbols[self.currentObject].append(symbol)
-                print("Symbol added via plan definition: "+symbol)
+                self.objectSymbols[self.currentObjectName].append(symbol)
         elif defType[0].lower() == 'd': # Data symbol, should be ignored
             self.dataSymbols[symbol] = 1
 
-    def processCallSymbols(self, calledSymbol, callingSymbol):
+    def processCallSymbols(self, calledSymbol, callType, callingSymbol):
         global index
         if callingSymbol in self.dataSymbols or calledSymbol in self.dataSymbols: return
         if callingSymbol not in self.symbolCalls: self.symbolCalls[callingSymbol] = []
-        if calledSymbol not in index:
+
+        if callType == "u":
+            callDest = self.packageName+":"+self.currentObjectName+":"+demangle(calledSymbol)
+        elif calledSymbol not in index:
             callDest = "NULL:"+demangle(calledSymbol)
+            print("%s not found in index"%calledSymbol)
         else:
-            calledPackageName = index[calledSymbol]
+            calledPackageName = index[calledSymbol] # calledPackageName includes the object!
             callDest = "id:"+calledPackageName+":"+demangle(calledSymbol)
         self.symbolCalls[callingSymbol].append(callDest)
-        print("Symbol added via call: "+callingSymbol)
-        if callingSymbol not in self.objectSymbols[self.currentObject]:
-            self.objectSymbols[self.currentObject].append(callingSymbol)
+        if callingSymbol not in self.objectSymbols[self.currentObjectName]:
+            self.objectSymbols[self.currentObjectName].append(callingSymbol)
 
     def parse(self, text):
         for l in text.splitlines():
@@ -82,8 +84,8 @@ class ParseLibParser(object):
                 continue
             m = re.match('^\s+(\S+).o\s*$',l) # Object name
             if m:
-                self.currentObject = m.group(1)
-                if self.currentObject not in self.objectSymbols: self.objectSymbols[self.currentObject] = []
+                self.currentObjectName = m.group(1)
+                if self.currentObjectName not in self.objectSymbols: self.objectSymbols[self.currentObjectName] = []
                 continue
             m = re.match('^\s+(\S+) (\S+)$',l) # Plain symbol with no call
             if m:
@@ -91,7 +93,9 @@ class ParseLibParser(object):
                 continue
             m = re.match('^\s+(\S+) (\S+), caller: (\S+)$',l) # A call from a symbol in our object
             if m:
-                self.processCallSymbols(calledSymbol = m.group(1), callingSymbol = m.group(3))
+                self.processCallSymbols(calledSymbol = m.group(1),
+                                        callType = m.group(2),
+                                        callingSymbol = m.group(3))
 
     def getYaml(self):
         package = {'contains': [], '@id': "id:"+self.packageName,
