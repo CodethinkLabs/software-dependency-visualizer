@@ -26,30 +26,40 @@ security policy. The server process is written in Python currently. This
 is just because it allowed me to complete the prototype quickly. The
 server could be reimplemented in another language fairly easily.
 
-## Running the demo
+There are three front-ends to this project for historical reasons. The current
+active front-end is 'block-layout'.
+
+## Running the block-layout demo
 
 * Start neo4j. If you've downloaded a copy of the neo4j community edition from http://neo4j.com/download/, then
 change to the unpacked directory and run:
 
     neo4j-community-2.3.2/bin/neo4j
-    
+
 * server.py and the 'neo4j' import tool are hardcoded for password ```insecure``` so you'll need to set neo4j's
   password to that, or modify both the tools. You'll be asked to change it when you connect to neo4j on
   http://localhost:7474.
 
-* You'll need a copy of context.jsonld which can be served over http. There is one in the http directory. You can
-  start a simple http server using
+* The first time you run the demo, you'll need to import some data. The visualiser can import data from RTL dumped
+  by GCC using the -fdump-rtl-expand flag. On simple C projects, just using "make CFLAGS=-fdump-rtl-expand" is
+  enough to produce the call graph. This will produce several ".c.170r.expand" files around your build tree.
 
-    cd http
-    python -m SimpleHTTPServer 8000
+  Then run these commands on the 'expand' files, where $SDV is the root of this repository's checkout.
 
-  Or use another service like ```mini-httpd```.
+    $SDV/import/rtl-importer.py *.expand
+    $SDV/import/rtl-importer.py *.expand
+    $SDV/import/neo4j output.yaml
 
-* If this is the first time you've run it, import that data from the examples directory:
+  You need to run 'rtl-importer.py' twice at the moment because it requires a first pass to generate an index
+  of all function names to objects. This will probably be optimised in a later version.
 
-    import/neo4j examples/shared-lib.yaml
+  The "neo4j" tool is very inefficient at the moment and may take a long time to import all the yaml. We currently
+  test by importing the call graph of Nethack 3.60, which takes about 33 minutes.
 
-* Start 'server.py' from this repository. You may need to specifically invoke it with Python 3, so use 'python3 server.py'.
+* Start 'server.py' from the 'block-layout' directory. There is also a server.py in the top-level directory,
+  which is meant for an older front-end; don't use this. You may need to specifically invoke it with Python 3,
+  so use 'python3 server.py'.
+
 Once this has started, you can point a browser at http://localhost:8080 to see the rendered results.
 
 ## Setup for MacOS
