@@ -36,16 +36,16 @@ function nodeYFunction (obj) {
     }
 }
 
-function linkXFunction (obj) {
-    return nodeXFunction (obj) + packagesColWidth + obj.col * objectsColWidth;
+function linkXFunction (obj, colWidth) {
+    return nodeXFunction (obj) + packagesColWidth + obj.col * colWidth;
 }
 
 function linkYFunction (obj) {
     return nodeYFunction (obj);
 }
 
-function targetLinkXFunction(colsNumber) {
-    return  objectsColWidth * colsNumber + packagesColWidth;
+function targetLinkXFunction(colsNumber, colWidth) {
+    return colWidth * colsNumber + packagesColWidth;
 
 }
 
