@@ -27,6 +27,7 @@ import os
 import warnings
 
 DEFAULT_ENDPOINT =  'http://neo4j:insecure@localhost:7474/db/data'
+wipeDatabase = True
 
 def argument_parser():
     parser = argparse.ArgumentParser(
@@ -97,10 +98,56 @@ def data_type(values):
     return kind
 
 
+def createRelationships(node, relationships, context, graph):
+    for key, value in relationships.items():
+        # We always use the short version of a key name to name
+        # relationships. This means that the data requires the context
+        # to make sense. But it is totally unreadable to have
+        # properties named <http://example.com/property-name>, and we
+        # avoid that this way.
+
+        key = compact_uri(key, context)
+
+        if not isinstance(value, list):
+            value = [value]
+        # Value must be a list now.
+        if len(value) == 0:
+            value = [None]
+        for target in value:
+            if isinstance(target, dict):
+                if '@id' not in target:
+                    warnings.warn("Invalid value for %s %s:\n\t%s\nMaybe you "
+                                "forgot to use @id to refer to another "
+                                "resource?" % (resource['@id'], key,
+                                                target))
+                    continue
+                target_uri = target['@id']
+            else:
+                target_uri = target
+
+            target = find_or_create_node_by_uri(graph, target_uri)
+            if wipeDatabase:
+                existing_rels = []
+            else:
+                existing_rels = graph.match(
+                    start_node=node,
+                    rel_type=key,
+                    end_node=target,
+                    limit=2)
+            print("Existing relations for %s->%s: %d"%(node, target, len(list(existing_rels))))
+            if len(list(existing_rels)) == 0:
+                relationship = py2neo.Relationship(node, key, target)
+                relationship.properties['name'] = compact_uri(key, context)
+                graph.create_unique(relationship)
+
 def main():
     args = argument_parser().parse_args()
 
     graph = py2neo.Graph(args.endpoint)
+
+    # Wipe everything
+    if wipeDatabase:
+        query_result = graph.cypher.execute('MATCH (n) OPTIONAL MATCH (n)-[r]-() DELETE n,r;')
 
     # The 'Resource' label is applied to all nodes in our graph. Neo4j indexes
     # and constraints must be attached to a label. Every node we create has a
@@ -183,42 +230,7 @@ def main():
                 node.labels.add(label_id)
                 all_labels.add(label_id)
 
-            for key, value in relationships.items():
-                # We always use the short version of a key name to name
-                # relationships. This means that the data requires the context
-                # to make sense. But it is totally unreadable to have
-                # properties named <http://example.com/property-name>, and we
-                # avoid that this way.
-
-                key = compact_uri(key, context)
-
-                if not isinstance(value, list):
-                    value = [value]
-                # Value must be a list now.
-                if len(value) == 0:
-                    value = [None]
-                for target in value:
-                    if isinstance(target, dict):
-                        if '@id' not in target:
-                            warnings.warn("Invalid value for %s %s:\n\t%s\nMaybe you "
-                                        "forgot to use @id to refer to another "
-                                        "resource?" % (resource['@id'], key,
-                                                        target))
-                            continue
-                        target_uri = target['@id']
-                    else:
-                        target_uri = target
-
-                    target = find_or_create_node_by_uri(graph, target_uri)
-                    existing_rels = graph.match(
-                        start_node=node,
-                        rel_type=key,
-                        end_node=target,
-                        limit=2)
-                    if len(list(existing_rels)) == 0:
-                        relationship = py2neo.Relationship(node, key, target)
-                        relationship.properties['name'] = compact_uri(key, context)
-                        graph.create_unique(relationship)
+            createRelationships(node, relationships, context, graph)
 
             node.push()
 
