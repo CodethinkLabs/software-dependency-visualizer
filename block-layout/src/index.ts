@@ -1,4 +1,4 @@
-/// <reference path="../examples/object-view-demo.ts"/>
+/// <reference path="../examples/utils.ts"/>
 /**
  * The MIT License (MIT).
  *

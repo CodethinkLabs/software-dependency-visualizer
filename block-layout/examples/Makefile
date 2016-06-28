@@ -1,4 +1,7 @@
-all:	object-view-demo package-view-demo packageindex
+all:	utils object-view-demo package-view-demo packageindex
+
+utils: utils.ts
+	tsc utils.ts || /bin/true
 
 object-view-demo: object-view-demo.ts
 	tsc object-view-demo.ts || /bin/true
