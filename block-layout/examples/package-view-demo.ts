@@ -1,19 +1,19 @@
 /// <reference path="utils.ts"/>
 var exampleJSON = [
-    { "symbolName": "Sym1", "parent": "d3d.o", "sortIndex": 0, "_id": 0 },
-    { "symbolName": "Sym2", "parent": "d3d.o", "sortIndex": 1, "_id": 1 },
-    { "symbolName": "Sym3", "parent": "d3d.o", "sortIndex": 2, "_id": 2 },
-    { "symbolName": "Sym4", "parent": "d3d.o", "sortIndex": 2, "_id": 3 },
-    { "symbolName": "Sym1", "parent": "ttf.o", "sortIndex": 0, "_id": 4 },
-    { "symbolName": "Sym2", "parent": "ttf.o", "sortIndex": 0, "_id": 5 },
-    { "symbolName": "Sym3", "parent": "ttf.o", "sortIndex": 0, "_id": 6 },
-    { "symbolName": "Sym1", "parent": "alx.o", "sortIndex": 0, "_id": 7 },
-    { "symbolName": "Sym2", "parent": "alx.o", "sortIndex": 1, "_id": 8 },
-    { "symbolName": "Sym3", "parent": "alx.o", "sortIndex": 2, "_id": 9 },
-    { "symbolName": "Sym1", "parent": "klf.o", "sortIndex": 0, "_id": 10 },
-    { "symbolName": "Sym2", "parent": "klf.o", "sortIndex": 1, "_id": 11 },
-    { "symbolName": "Sym3", "parent": "klf.o", "sortIndex": 2, "_id": 12 },
-    { "symbolName": "Sym4", "parent": "klf.o", "sortIndex": 2, "_id": 13 },
+    { "symbolName": "Pkg1", "parent": "Packages", "sortIndex": 0, "_id": 0 },
+    { "symbolName": "Pkg2", "parent": "Packages", "sortIndex": 1, "_id": 1 },
+    { "symbolName": "Pkg3", "parent": "Packages", "sortIndex": 2, "_id": 2 },
+    { "symbolName": "Pkg4", "parent": "Packages", "sortIndex": 2, "_id": 3 },
+    { "symbolName": "Pkg5", "parent": "Packages", "sortIndex": 0, "_id": 4 },
+    { "symbolName": "Pkg6", "parent": "Packages", "sortIndex": 0, "_id": 5 },
+    { "symbolName": "Pkg7", "parent": "Packages", "sortIndex": 0, "_id": 6 },
+    { "symbolName": "Pkg8", "parent": "Packages", "sortIndex": 0, "_id": 7 },
+    { "symbolName": "Pkg9", "parent": "Packages", "sortIndex": 1, "_id": 8 },
+    { "symbolName": "Pkg10", "parent": "Packages", "sortIndex": 2, "_id": 9 },
+    { "symbolName": "Pkg11", "parent": "Packages", "sortIndex": 0, "_id": 10 },
+    { "symbolName": "Pkg12", "parent": "Packages", "sortIndex": 1, "_id": 11 },
+    { "symbolName": "Pkg13", "parent": "Packages", "sortIndex": 2, "_id": 12 },
+    { "symbolName": "Pkg14", "parent": "Packages", "sortIndex": 2, "_id": 13 },
 ];
 
 var exampleCalls : Call[] = [
