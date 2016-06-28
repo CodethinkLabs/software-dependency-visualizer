@@ -321,7 +321,8 @@ function initGraph()
 {
     return d3.select('#graph').relationshipGraph({
         'showTooltips': true,
-        'maxChildCount': 3,
+        'maxChildCount': 8,
+        'columns': 1,
 	'showKeys': false,
 	'blockSize': blockSize,
 	'nodeDrawCallback': nodeDrawCallback,
