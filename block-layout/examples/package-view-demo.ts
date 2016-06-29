@@ -103,6 +103,20 @@ function abbreviateSymbol(s: string) : string
     return s;
 }
 
+function loadpackages(){
+    var from_select = $("#from_select");
+    var to_select = $("#to_select");
+    $.getJSON('/nodes/type/Package', function (package_nodes) {
+        from_select.empty()
+        to_select.empty()
+        $.each(package_nodes, function() {
+            from_select.append($("<option />").val(this._id).text(this.caption));
+            to_select.append($("<option />").val(this._id).text(this.caption));
+        });
+    });
+}
+
+
 function database()
 {
     // This function fetches JSON from the graph database intermediate server (server.py)
