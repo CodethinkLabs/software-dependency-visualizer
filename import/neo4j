@@ -27,7 +27,6 @@ import os
 import warnings
 
 DEFAULT_ENDPOINT =  'http://neo4j:insecure@localhost:7474/db/data'
-wipeDatabase = True
 
 def argument_parser():
     parser = argparse.ArgumentParser(
@@ -37,6 +36,8 @@ def argument_parser():
     parser.add_argument('--endpoint', '-e', metavar='URL',
                         default=DEFAULT_ENDPOINT,
                         help="Neo4J endpoint (default: %s)" % DEFAULT_ENDPOINT)
+    parser.add_argument('--wipe', '-w', action='store_true',
+                        help="Wipe the neo4j database before import (default: no)")
     return parser
 
 
@@ -98,7 +99,7 @@ def data_type(values):
     return kind
 
 
-def createRelationships(node, relationships, context, graph):
+def createRelationships(node, relationships, context, graph, wipeDatabase):
     for key, value in relationships.items():
         # We always use the short version of a key name to name
         # relationships. This means that the data requires the context
@@ -146,7 +147,8 @@ def main():
     graph = py2neo.Graph(args.endpoint)
 
     # Wipe everything
-    if wipeDatabase:
+    if args.wipe:
+        print ("Wiping database...")
         query_result = graph.cypher.execute('MATCH (n) OPTIONAL MATCH (n)-[r]-() DELETE n,r;')
 
     # The 'Resource' label is applied to all nodes in our graph. Neo4j indexes
@@ -230,7 +232,7 @@ def main():
                 node.labels.add(label_id)
                 all_labels.add(label_id)
 
-            createRelationships(node, relationships, context, graph)
+            createRelationships(node, relationships, context, graph, args.wipe)
 
             node.push()
 
