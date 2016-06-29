@@ -143,6 +143,20 @@ def node_name(node):
         print("Attempting to make a name for node %s [using uri] "%(repr(node)))
         return node['uri']
 
+@app.route('/nodes/type/<node_type>')
+def nodes_type(node_type):
+    '''Return all the nodes with the type node_type'''
+
+    node_type = urllib.parse.unquote(node_type)
+    result =  {}
+
+    q = """MATCH (n:%s) RETURN n""" % node_type
+    nodes = database.query(q, returns=(neo4jrestclient.client.Node))
+    for node in nodes:
+        node_json = encode_node(node[0])
+        result[node_json['caption']] = node_json
+
+    return result
 
 def encode_node(node, contents_graphjson=None):
     '''Represent as GraphJSON data, ready to send to client.'''
