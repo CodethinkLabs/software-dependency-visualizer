@@ -10,25 +10,24 @@ class Call {
 const objectsColWidth = 400;
 const packagesColWidth = 200;
 const packagesHeight = 40;
-const blockSize : number = 64;
 
-function nodeXFunction (obj) {
+function nodeXFunction (obj, bSize) {
     if(obj==null) return 0;
     if(obj.index)
     {
-        return 32 + ((obj.index - 1) * blockSize);
+        return 32 + ((obj.index - 1) * bSize);
     } else {
         console.log("Object: '"+obj.Object+"' has no index");
         return 0;
     }
 }
 
-function nodeYFunction (obj) {
+function nodeYFunction (obj, bSize) {
     if(obj===null) {
         return 0;
     }
     if(obj.row) {
-        var y = (obj.row - 1) * blockSize + (16*obj.objectNo)-12;
+        var y = (obj.row - 1) * bSize + (16*obj.objectNo)-12;
         return y;
     } else {
         console.log("Object has no row");
@@ -36,12 +35,12 @@ function nodeYFunction (obj) {
     }
 }
 
-function linkXFunction (obj, colWidth) {
-    return nodeXFunction (obj) + packagesColWidth + obj.col * colWidth;
+function linkXFunction (obj, colWidth, bSize) {
+    return nodeXFunction (obj, bSize) + packagesColWidth + obj.col * colWidth;
 }
 
-function linkYFunction (obj) {
-    return nodeYFunction (obj);
+function linkYFunction (obj, bSize) {
+    return nodeYFunction (obj, bSize);
 }
 
 function targetLinkXFunction(colsNumber, colWidth) {

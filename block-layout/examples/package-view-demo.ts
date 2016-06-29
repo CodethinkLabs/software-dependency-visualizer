@@ -31,6 +31,7 @@ var exampleCalls : Call[] = [
 var d3;
 var $;
 var packageName : string;
+const packageBlockSize : number = 80;
 
 // Add the item to the set unless it's there already, and
 // return the new set. The original is also modified, unless
@@ -197,8 +198,8 @@ function update()
     calloutNodes.data(externalPackages);
 }
 
-function nodeTranslationFunction (obj) { var x = nodeXFunction(obj);
-					 var y = nodeYFunction(obj);
+function nodeTranslationFunction (obj) { var x = nodeXFunction(obj, packageBlockSize);
+					 var y = nodeYFunction(obj, packageBlockSize);
 					 return "translate ("+x+" "+y+")"; }
 
 function noop() : void
@@ -324,7 +325,7 @@ function initGraph()
         'maxChildCount': 8,
         'columns': 1,
 	'showKeys': false,
-	'blockSize': blockSize,
+	'blockSize': packageBlockSize,
 	'nodeDrawCallback': nodeDrawCallback,
 	'onClick': symbolClickCallback
     });

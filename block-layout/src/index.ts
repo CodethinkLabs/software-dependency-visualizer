@@ -731,24 +731,24 @@ var define, exports, require, module;
 			    return "";
 			}
 			if(obj.target < 0) {
-			    var x1 : number = linkXFunction(source, _this.config.objectsColWidth);
+			    var x1 : number = linkXFunction(source, _this.config.objectsColWidth, _this.config.blockSize);
                             // TODO: Real fix would be to set lineXOffset to 0, but that will change
                             // the offset of the starting point.
 			    var x2 : number = targetLinkXFunction(_this.config.columns, _this.config.objectsColWidth) - lineXOffset;
-			    var y1 : number = linkYFunction(source);
+			    var y1 : number = linkYFunction(source, _this.config.blockSize);
 			    var y2 : number = 24+package1OffsetY + obj.target*-packagesHeight;
 			    var x2_control_dx : number = -128;
 			} else if(obj.source < 0) {
 			    var x1 : number = sourceLinkXFunction(_this.config.columns) - lineXOffset;
-			    var x2 : number = linkXFunction(target, _this.config.objectsColWidth);
+			    var x2 : number = linkXFunction(target, _this.config.objectsColWidth, _this.config.blockSize);
 			    var y1 : number = 24+package1OffsetY + obj.source*-packagesHeight;
-			    var y2 : number = linkYFunction(target);
+			    var y2 : number = linkYFunction(target, _this.config.blockSize);
 			    var x2_control_dx : number = -128;
 			} else {
-			    var x1 : number = linkXFunction(source, _this.config.objectsColWidth);
-			    var x2 : number = linkXFunction(target, _this.config.objectsColWidth);
-			    var y1 : number = linkYFunction(source);
-			    var y2 : number = linkYFunction(target);
+			    var x1 : number = linkXFunction(source, _this.config.objectsColWidth, _this.config.blockSize);
+			    var x2 : number = linkXFunction(target, _this.config.objectsColWidth, _this.config.blockSize);
+			    var y1 : number = linkYFunction(source, _this.config.blockSize);
+			    var y2 : number = linkYFunction(target, _this.config.blockSize);
 			    var x2_control_dx : number = 256;
 			}
 
@@ -801,7 +801,7 @@ var define, exports, require, module;
             for (i = 0; i < childrenNodes.length; i++) {
                 childrenNodes[i].transition(_this.config.transitionTime)
                     .attr( "transform", function(obj) { var x = 32 + ((obj.index - 1) * _this.config.blockSize);
-                                                        var y = nodeYFunction(obj);
+                                                        var y = nodeYFunction(obj, _this.config.blockSize);
                                                         return "translate ("+x+" "+y+")"; })
                     .style('fill', function(obj) {
                         return _this.config.colors[obj.color % _this.config.colors.length] || _this.config.colors[0];

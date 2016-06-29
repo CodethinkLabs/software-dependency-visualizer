@@ -16,6 +16,8 @@ var exampleJSON = [
     { "symbolName": "Sym4", "parent": "klf.o", "sortIndex": 2, "_id": 13 },
 ];
 
+const objectBlockSize : number = 64;
+
 var d3;
 var $;
 var packageName : string;
@@ -276,8 +278,8 @@ function update()
     setPackageLabelTextAttributes(group.append("text"));
 }
 
-function nodeTranslationFunction (obj) { var x = nodeXFunction(obj);
-					 var y = nodeYFunction(obj);
+function nodeTranslationFunction (obj) { var x = nodeXFunction(obj, objectBlockSize);
+					 var y = nodeYFunction(obj, objectBlockSize);
 					 return "translate ("+x+" "+y+")"; }
 
 function noop() : void
@@ -403,7 +405,7 @@ function initGraph()
         'showTooltips': true,
         'maxChildCount': 3,
 	'showKeys': false,
-	'blockSize': blockSize,
+	'blockSize': objectBlockSize,
 	'nodeDrawCallback': nodeDrawCallback,
 	'onClick': symbolClickCallback
     });
