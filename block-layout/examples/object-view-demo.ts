@@ -263,8 +263,6 @@ function update()
     var group = calloutNodes.enter().append("g");
     setPackageLabelAttributes(group.append("rect"));
     setPackageLabelTextAttributes(group.append("text"));
-
-    calloutNodes.data(calledPackages);
 }
 
 var blockSize : number = 64;
