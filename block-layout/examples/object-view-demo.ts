@@ -116,6 +116,7 @@ var symbolArray : D3Symbol[] = [];
 var callGraph : Call[] = [];
 var objectCalls = [];
 var externalPackages : string[]= [];
+var calledPackages : string[]= [];
 
 function countChars(s: string, c:string) : number
 {
@@ -173,6 +174,7 @@ function database()
 	}
 	var localNodes : {[Identifier:number]:boolean} = {}; // Is this node ID inside this package?
 	var externalSyms : {[Identifier:number]:number} = {};
+	var nodeToPackageMap : { [id: number]: string } = {};
 	for(var o=0;o<pack.contains.nodes.length;o++) {
 	    var object : GraphDBNode = pack.contains.nodes[o];
 	    console.log("Recording object "+object.caption);
@@ -205,6 +207,7 @@ function database()
 			console.log("Unparseable URI: "+node.uri);
 		    } else {
 			externalPackage = uriParts[1];
+			nodeToPackageMap[node._id] = externalPackage;
 			console.log("Possible external package: "+externalPackage);
 			if(uriParts[0] != "NULL" && uriParts[0] != "EXTERNAL" && externalPackage != packageName) { // "EXTERNAL" is a silly name; here it means external to the whole package-universe, not external to this package :(
 			    externalPackages = addToSet(externalPackages, externalPackage);
@@ -225,8 +228,13 @@ function database()
 		}
 		else if(localNodes[edge._source] == true && externalSyms[edge._target]>=0) {
 		    // That's a call outwards
+
+		    var calledPackage : string = nodeToPackageMap[edge._target];
+		    calledPackages = addToSet(calledPackages, calledPackage);
+		    var pos : number = getPositionInSet(calledPackages, calledPackage);
+
 		    console.log("Source symbol "+edge._source+" calls external symbol "+edge._target);
-		    callGraph.push( { source: edge._source, target: -externalSyms[edge._target] } );
+		    callGraph.push( { source: edge._source, target: -pos-1 } );
 		}
 	    }
 	}
@@ -251,12 +259,12 @@ function update()
     graph = initGraph();
     graph.data(symbolArray, callGraph, objectCalls);
 
-    var calloutNodes = d3.select(".callsOut").selectAll("rect").data(externalPackages);
+    var calloutNodes = d3.select(".callsOut").selectAll("rect").data(calledPackages);
     var group = calloutNodes.enter().append("g");
     setPackageLabelAttributes(group.append("rect"));
     setPackageLabelTextAttributes(group.append("text"));
 
-    calloutNodes.data(externalPackages);
+    calloutNodes.data(calledPackages);
 }
 
 var blockSize : number = 64;
