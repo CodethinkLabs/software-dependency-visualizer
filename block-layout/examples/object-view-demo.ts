@@ -165,19 +165,24 @@ function database()
 	console.log("Displaying node: ", node_info);
 	var pack : GraphDBNode = node_info.nodes[0];
 	console.log("Package returned: "+pack.caption);
+	var objectsInPackage : { [id: number]: boolean } = {};
+	for(var o=0;o<pack.contains.nodes.length;o++) {
+	    var object : GraphDBNode = pack.contains.nodes[o];
+	    objectsInPackage[object._id] = true;
+	}
 	for(var o=0;o<pack.contains.nodes.length;o++) {
 	    var object : GraphDBNode = pack.contains.nodes[o];
 	    console.log("Recording object "+object.caption);
-	    var localNodes : {[Identifier:number]:boolean} = {};
+	    var localNodes : {[Identifier:number]:boolean} = {}; // Is this node ID inside this package?
 	    var externalSyms : {[Identifier:number]:number} = {};
 	    for (var s=0;s<object.contains.nodes.length;s++) {
 		var node : GraphDBNode = object.contains.nodes[s];
 		if(node.caption == "") {
 		    console.log("Loaded object with no caption! id: "+node._id);
 		}
-		if(node.parent) { // Nodes without parents are external symbols, which are ignored at the moment.
+		if(node.parent) { // Nodes without parents are external symbols
 		    if(node.parent != object._id) {
-			console.log("Symbol "+node._id+ " is in the wrong parent and will not be recorded (symbol parent "+node.parent+", object id "+object._id);
+			console.log("Symbol "+node.caption+ " is misparented and should be treated as external (symbol parent "+node.parent+", object id "+object._id);
 		    } else {
 			symbolArray.push( { "symbolName": node.caption, "shortName": abbreviateSymbol(node.caption), "parent": object.caption, "sortIndex": 0, "_id": node._id});
 			console.log("Recording map of symbol "+node._id+" to object "+object._id)
@@ -186,15 +191,18 @@ function database()
 			}
 			nodeToObjectMap[node._id] = object;
 		    }
-		    localNodes[node._id] = true;
-		} else {
+		    if(objectsInPackage[node.parent] == true) {
+			localNodes[node._id] = true;
+		    }
+		}
+		if(!localNodes[node._id]) {
 		    // Possible external package?
 		    var externalPackage : string;
-		    externalPackage = node.caption.substring(3);
+		    externalPackage = node.caption;
 		    var x: number = externalPackage.indexOf(":");
 		    console.log("Possible external package: "+externalPackage);
 		    externalPackage = externalPackage.substring(0,x);
-		    if(externalPackage != "NULL" && externalPackage != packageName) {
+		    if(externalPackage != "NULL" && externalPackage != "EXTERNAL" && externalPackage != packageName) { // "EXTERNAL" is a silly name; here it means external to the whole package-universe, not external to this package :(
 			externalPackages = addToSet(externalPackages, externalPackage);
 			externalSyms[node._id] = getPositionInSet(externalPackages, externalPackage);
 		    }
