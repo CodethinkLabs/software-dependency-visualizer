@@ -65,6 +65,7 @@ class GraphDBNode {
     contains: Container;
     _source: number;
     _target: number;
+    uri: string;
 }
 
 var exampleCalls : Call[] = [
@@ -170,11 +171,11 @@ function database()
 	    var object : GraphDBNode = pack.contains.nodes[o];
 	    objectsInPackage[object._id] = true;
 	}
+	var localNodes : {[Identifier:number]:boolean} = {}; // Is this node ID inside this package?
+	var externalSyms : {[Identifier:number]:number} = {};
 	for(var o=0;o<pack.contains.nodes.length;o++) {
 	    var object : GraphDBNode = pack.contains.nodes[o];
 	    console.log("Recording object "+object.caption);
-	    var localNodes : {[Identifier:number]:boolean} = {}; // Is this node ID inside this package?
-	    var externalSyms : {[Identifier:number]:number} = {};
 	    for (var s=0;s<object.contains.nodes.length;s++) {
 		var node : GraphDBNode = object.contains.nodes[s];
 		if(node.caption == "") {
@@ -182,7 +183,7 @@ function database()
 		}
 		if(node.parent) { // Nodes without parents are external symbols
 		    if(node.parent != object._id) {
-			console.log("Symbol "+node.caption+ " is misparented and should be treated as external (symbol parent "+node.parent+", object id "+object._id);
+			console.log("Symbol "+node.caption+ "/"+node._id+" is misparented and should be treated as external (symbol parent "+node.parent+", object id "+object._id);
 		    } else {
 			symbolArray.push( { "symbolName": node.caption, "shortName": abbreviateSymbol(node.caption), "parent": object.caption, "sortIndex": 0, "_id": node._id});
 			console.log("Recording map of symbol "+node._id+" to object "+object._id)
@@ -195,16 +196,22 @@ function database()
 			localNodes[node._id] = true;
 		    }
 		}
-		if(!localNodes[node._id]) {
-		    // Possible external package?
+		if(localNodes[node._id] != true) {
+		    // The general format of URIs is id:<package>:<object>:<symbol>
+		    // Some however will be EXTERNAL:<symbol>
 		    var externalPackage : string;
-		    externalPackage = node.caption;
-		    var x: number = externalPackage.indexOf(":");
-		    console.log("Possible external package: "+externalPackage);
-		    externalPackage = externalPackage.substring(0,x);
-		    if(externalPackage != "NULL" && externalPackage != "EXTERNAL" && externalPackage != packageName) { // "EXTERNAL" is a silly name; here it means external to the whole package-universe, not external to this package :(
-			externalPackages = addToSet(externalPackages, externalPackage);
-			externalSyms[node._id] = getPositionInSet(externalPackages, externalPackage);
+		    var uriParts : string[] = node.uri.split(':');
+		    if(uriParts.length < 2) {
+			console.log("Unparseable URI: "+node.uri);
+		    } else {
+			externalPackage = uriParts[1];
+			console.log("Possible external package: "+externalPackage);
+			if(uriParts[0] != "NULL" && uriParts[0] != "EXTERNAL" && externalPackage != packageName) { // "EXTERNAL" is a silly name; here it means external to the whole package-universe, not external to this package :(
+			    externalPackages = addToSet(externalPackages, externalPackage);
+			    var pos : number = getPositionInSet(externalPackages, externalPackage);
+			    externalSyms[node._id] = pos+1;
+			    console.log(externalPackage + "/"+node._id+" is recorded as external package "+pos);
+			}
 		    }
 		}
 	    }
