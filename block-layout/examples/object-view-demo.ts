@@ -161,6 +161,9 @@ function database()
     objectCalls = [];
     externalPackages = [];
 
+    let title = <HTMLElement> document.querySelector('h1')
+    title.innerHTML = "Loading "+packageName;
+
     $.getJSON('/graph/present/' + nodeid, function (node_info) {
 
 	var objectCallGraph : { [id: number]: number[] } = {};
@@ -258,11 +261,10 @@ function database()
 		objectCalls.push([callingObject, value]);
 	    });
 	});
+	title.innerHTML = "Package "+packageName;
 
         update();
     });
-    let title = <HTMLElement> document.querySelector('h1')
-    title.innerHTML = packageName;
 }
 
 function update()
