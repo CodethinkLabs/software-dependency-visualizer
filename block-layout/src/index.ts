@@ -255,6 +255,12 @@ var define, exports, require, module;
             .attr('class', 'callsOut')
             .attr('transform', 'translate(' + (packagesColWidth + this.config.columns * objectsColWidth) +', 0)');
 
+        // Create Packages group for called
+        this.called = this.svg
+            .append('g')
+            .attr('class', 'callsIn')
+            .attr('transform', 'translate(' + (objectsColWidth) +', 0)');
+
         // Create group for Links
         this.links = this.svg
             .append('g')
@@ -691,7 +697,6 @@ var define, exports, require, module;
 			return node;
 		    }
 		}
-		console.log("No object found with ID "+id);
 		return null;
 	    }
 
@@ -726,13 +731,18 @@ var define, exports, require, module;
 			    return "";
 			}
 			if(obj.target < 0) {
-			    console.log("Target ID is negative; presuming an external link");
 			    var x1 : number = linkXFunction(source);
                             // TODO: Real fix would be to set lineXOffset to 0, but that will change
                             // the offset of the starting point.
 			    var x2 : number = targetLinkXFunction(_this.config.columns) - lineXOffset;
 			    var y1 : number = linkYFunction(source);
 			    var y2 : number = package1OffsetY + obj.target*-packagesHeight;
+			    var x2_control_dx : number = -128;
+			} else if(obj.source < 0) {
+			    var x1 : number = sourceLinkXFunction(_this.config.columns) - lineXOffset;
+			    var x2 : number = linkXFunction(target);
+			    var y1 : number = package1OffsetY + obj.source*-packagesHeight;
+			    var y2 : number = linkYFunction(target);
 			    var x2_control_dx : number = -128;
 			} else {
 			    var x1 : number = linkXFunction(source);

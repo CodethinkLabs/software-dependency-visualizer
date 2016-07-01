@@ -117,6 +117,7 @@ var callGraph : Call[] = [];
 var objectCalls = [];
 var externalPackages : string[]= [];
 var calledPackages : string[]= [];
+var callingPackages : string[]= [];
 
 function countChars(s: string, c:string) : number
 {
@@ -236,6 +237,16 @@ function database()
 		    console.log("Source symbol "+edge._source+" calls external symbol "+edge._target);
 		    callGraph.push( { source: edge._source, target: -pos-1 } );
 		}
+		else if(externalSyms[edge._source] >= 0 && localNodes[edge._target]==true) {
+		    // That's a call inwards
+
+		    var callingPackage : string = nodeToPackageMap[edge._source];
+		    callingPackages = addToSet(callingPackages, callingPackage);
+		    var pos : number = getPositionInSet(callingPackages, callingPackage);
+
+		    console.log("External symbol "+edge._source+" calls local symbol "+edge._target);
+		    callGraph.push( { source: -pos-1, target: edge._target } );
+		}
 	    }
 	}
 
@@ -261,6 +272,11 @@ function update()
 
     var calloutNodes = d3.select(".callsOut").selectAll("rect").data(calledPackages);
     var group = calloutNodes.enter().append("g");
+    setPackageLabelAttributes(group.append("rect"));
+    setPackageLabelTextAttributes(group.append("text"));
+
+    var callinNodes = d3.select(".callsIn").selectAll("rect").data(callingPackages);
+    var group = callinNodes.enter().append("g");
     setPackageLabelAttributes(group.append("rect"));
     setPackageLabelTextAttributes(group.append("text"));
 }
@@ -303,6 +319,10 @@ function targetLinkXFunction(colsNumber) {
     return  objectsColWidth * colsNumber + packagesColWidth;
 }
 
+function sourceLinkXFunction(colsNumber) {
+    return 150;
+}
+
 function nodeTranslationFunction (obj) { var x = nodeXFunction(obj);
 					 var y = nodeYFunction(obj);
 					 return "translate ("+x+" "+y+")"; }
@@ -313,7 +333,7 @@ function noop() : void
 
 function nodeDrawCallback(_this, thing)
 {
-    group = thing.append('g');
+    var group = thing.append('g');
     group.attr( "transform", nodeTranslationFunction );
     group.append('rect').attr('x', 0)
         .attr('y', 0)
@@ -439,9 +459,6 @@ var graph = initGraph();
 
 var interval = null;
 
-// Thing to add all the callers
-var data = [ "A", "B", "C", "D" ];
-
 function setPackageLabelAttributes(selection)
 {
     selection.attr("height", function(d) { return packagesHeight - 6; })
@@ -484,10 +501,6 @@ function example() {
     let title = <HTMLElement> document.querySelector('h1')
     title.innerHTML = "Example data";
 }
-
-var group = d3.select(".callsIn").selectAll("rect").data(data).enter().append("g");
-setPackageLabelAttributes(group.append("rect"));
-setPackageLabelTextAttributes(group.append("text"));
 
 var vars = getUrlVars();
 packageName = vars['package'] || "libhfr"
