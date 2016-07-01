@@ -19,6 +19,20 @@ const objectsColWidth = 400;
 const packagesColWidth = 200;
 const packagesHeight = 40;
 
+var d3;
+var $;
+var packageName : string;
+var symbolArray : D3Symbol[] = [];
+var callGraph : Call[] = [];
+var objectCalls = [];
+var externalPackages : string[]= [];
+var calledPackages : string[]= [];
+var callingPackages : string[]= [];
+var animationProgress : number = 0;
+var continueAnimating : boolean = false;
+var circle;
+var graph;
+
 interface Call {
     highlight?: number;
 }
@@ -80,9 +94,6 @@ var exampleCalls : Call[] = [
     { source: 0, target: 12 },
 ];
 
-var d3;
-var $;
-var packageName : string;
 
 // Add the item to the set unless it's there already, and
 // return the new set. The original is also modified, unless
@@ -112,12 +123,6 @@ function getPositionInSet<T>(set : T[], item : T) : number
 }
 
 
-var symbolArray : D3Symbol[] = [];
-var callGraph : Call[] = [];
-var objectCalls = [];
-var externalPackages : string[]= [];
-var calledPackages : string[]= [];
-var callingPackages : string[]= [];
 
 function countChars(s: string, c:string) : number
 {
@@ -152,6 +157,32 @@ function abbreviateSymbol(s: string) : string
     return s;
 }
 
+function startLoadingAnimation()
+{
+    var svg = <HTMLElement> document.querySelector('svg');
+    var svgNS = svg.namespaceURI;
+    circle = document.createElementNS(svgNS,'circle');
+    circle.setAttribute('cx','320');
+    circle.setAttribute('cy','240');
+    circle.setAttribute('r','16');
+    circle.setAttribute('fill','#95B3D7');
+    svg.appendChild(circle);
+    continueAnimating = true;
+    setTimeout(function() { loadingAnimationTick(); }, 40);
+}
+
+function loadingAnimationTick()
+{
+    animationProgress += 1;
+    console.log("Loading animation");
+    circle.setAttribute('cx', 320+64*Math.cos(animationProgress / 25 * Math.PI));
+    circle.setAttribute('cy', 240+64*Math.sin(animationProgress / 25 * Math.PI));
+    if(continueAnimating) {
+	setTimeout(function() {loadingAnimationTick();}, 40);
+    }
+}
+
+
 function database()
 {
     // This function fetches JSON from the graph database intermediate server (server.py)
@@ -164,8 +195,11 @@ function database()
     let title = <HTMLElement> document.querySelector('h1')
     title.innerHTML = "Loading "+packageName;
 
+    startLoadingAnimation();
+
     $.getJSON('/graph/present/' + nodeid, function (node_info) {
 
+	title.innerHTML = "Loaded "+packageName;
 	var objectCallGraph : { [id: number]: number[] } = {};
 	var nodeToObjectMap : { [id: number]: GraphDBNode } = {};
 	console.log("Displaying node: ", node_info);
@@ -261,6 +295,7 @@ function database()
 		objectCalls.push([callingObject, value]);
 	    });
 	});
+	continueAnimating = false;
 	title.innerHTML = "Package "+packageName;
 
         update();
@@ -457,10 +492,6 @@ function initGraph()
     });
 }
 
-var graph = initGraph();
-
-var interval = null;
-
 function setPackageLabelAttributes(selection)
 {
     selection.attr("height", function(d) { return packagesHeight - 6; })
@@ -504,6 +535,13 @@ function example() {
     title.innerHTML = "Example data";
 }
 
+// Start everything moving
+
 var vars = getUrlVars();
-packageName = vars['package'] || "libhfr"
-var nodeid = "id:"+packageName;
+var packageName : string = vars['package'] || "a"
+var nodeid : string = "id:"+packageName;
+if(packageName == "example") {
+    example()
+} else {
+    database()
+}
