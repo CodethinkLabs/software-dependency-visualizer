@@ -495,7 +495,7 @@ function setPackageLabelAttributes(selection)
 {
     selection.attr("height", function(d) { return packagesHeight - 6; })
 	.attr("x", 0).attr("rx", 4).attr("ry", 4)
-	.attr("y", function(d, index) { return index*packagesHeight; })
+	.attr("y", function(d, index) { return 24+index*packagesHeight; })
 	.style("fill", "#000000")
 	.attr("width", 150)
 	.attr("onclick",function(d) { return "window.location = 'index.html?package="+d+"';" });
@@ -504,7 +504,7 @@ function setPackageLabelAttributes(selection)
 function setPackageLabelTextAttributes(selection)
 {
     selection.attr("x", 10)
-	.attr("y", function(d, index) { return index*packagesHeight+packagesHeight/2; })
+	.attr("y", function(d, index) { return 24+index*packagesHeight+packagesHeight/2; })
 	.style("fill", "#ffffff")
 	.text(function(d) { return d });
 }
