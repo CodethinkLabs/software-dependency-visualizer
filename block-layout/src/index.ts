@@ -235,12 +235,6 @@ var define, exports, require, module;
             .attr('d', function(d){ return d.path })
             .attr('fill', function(d) { return d.color });
 
-        // Create Packages group for callers
-        this.callers = this.svg
-            .append('g')
-            .attr('class', 'callsIn')
-            .attr('transform', 'translate(0, 0)');
-
         // Create central columns for Objects
         this.cols = [];
         for ( var i = 0; i < this.config.columns; i++ ) {
@@ -255,11 +249,11 @@ var define, exports, require, module;
             .attr('class', 'callsOut')
             .attr('transform', 'translate(' + (packagesColWidth + this.config.columns * objectsColWidth) +', 0)');
 
-        // Create Packages group for called
-        this.called = this.svg
+        // Create Packages group for callers
+        this.callers = this.svg
             .append('g')
             .attr('class', 'callsIn')
-            .attr('transform', 'translate(' + (objectsColWidth) +', 0)');
+            .attr('transform', 'translate(0, 0)');
 
         // Create group for Links
         this.links = this.svg
