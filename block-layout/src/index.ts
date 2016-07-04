@@ -778,8 +778,12 @@ var define, exports, require, module;
                     .attr("marker-end", "url(#marker_arrow)")
                     .attr('stroke', function(obj) {
 			if (obj.highlight == null) return "#444";
-			var val : string = (10-obj.highlight*8).toString(16);
-			return "#"+val+val+val;
+			return "#000";
+		    })
+		    .attr('stroke-opacity', function(obj) {
+			if (obj.highlight == null) return "0.5";
+			if (obj.highlight == 0) return "0.1";
+			return "1.0";
 		    })
 		    .style("fill", "none");
 	    }
