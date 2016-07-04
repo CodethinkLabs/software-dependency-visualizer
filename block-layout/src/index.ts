@@ -734,12 +734,12 @@ var define, exports, require, module;
                             // the offset of the starting point.
 			    var x2 : number = targetLinkXFunction(_this.config.columns) - lineXOffset;
 			    var y1 : number = linkYFunction(source);
-			    var y2 : number = package1OffsetY + obj.target*-packagesHeight;
+			    var y2 : number = 24+package1OffsetY + obj.target*-packagesHeight;
 			    var x2_control_dx : number = -128;
 			} else if(obj.source < 0) {
 			    var x1 : number = sourceLinkXFunction(_this.config.columns) - lineXOffset;
 			    var x2 : number = linkXFunction(target);
-			    var y1 : number = package1OffsetY + obj.source*-packagesHeight;
+			    var y1 : number = 24+package1OffsetY + obj.source*-packagesHeight;
 			    var y2 : number = linkYFunction(target);
 			    var x2_control_dx : number = -128;
 			} else {
