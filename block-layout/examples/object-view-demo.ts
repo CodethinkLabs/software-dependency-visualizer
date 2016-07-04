@@ -161,7 +161,7 @@ function abbreviateSymbol(s: string) : string
 	}
 	s = initials;
     }
-    if(s.length > 9) s = substring(0,9);
+    if(s.length > 9) s = s.substring(0,9);
 
     console.log("Abbreviated to "+s);
     return s;
@@ -412,7 +412,8 @@ function nodeDrawCallback(_this, thing)
             _this.tip.hide();
             _this.config.onClick(obj);
         });
-    group.append('text').attr('x', 0).attr('y', (_this.config.blockSize)/2).attr("fill", "#000").text(function(obj) { return obj.shortName || obj.symbolName; });
+    group.append('text').attr('x', 0).attr('y', (_this.config.blockSize)/2).attr("fill", "#000").text(function(obj) {     console.log("Drawing symbol: shortname "+obj.shortName+", long "+obj.symbolName);
+															  return obj.shortName || obj.symbolName; });
     group.attr('class', 'relationshipGraph-node');
 }
 
