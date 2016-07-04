@@ -134,25 +134,36 @@ function countChars(s: string, c:string) : number
 
 function abbreviateSymbol(s: string) : string
 {
+    // Strip off any C++ namespaces and class names.
     var x : number = s.lastIndexOf("::")
     if(x>=0) s = s.substring(x+2);
 
+    if(s.length <= 8) return s;
+
     if(s.toUpperCase() != s && s.toLowerCase() != s) {
-	// This looks like mixed case, maybe camelcase
+	// This looks like mixed case, maybe camelcase, so replace this with
+	// the initial characters.
 	var initials : string = "";
 	for(var i:number=0;i<s.length;i++) {
 	    if(s[i].toUpperCase() == s[i]) initials += s[i];
 	}
 	s = initials;
     }
-    else if(countChars(s, '_') > 2 && s.length>5) {
-	// Looks like an underscore-separated name
+    else if(countChars(s, '_') > 0) {
+	// Looks like an underscore-separated name; replace this with lower-case
+	// initialse, so "wiz_rumor_check" becomes "wrc", for example.
 	var initials : string = "";
-	for(var i:number=1;i<s.length;i++) {
-	    if(s[i] == '_' && s[i-1] != '_') initials += s[i-1];
+	if(s[0] != '_') initials += s[0];
+	for(var i:number=0;i<s.length-1;i++) {
+	    if(s[i] == '_') {
+		if(s[i+1] != '_') initials += s[i+1];
+	    }
 	}
 	s = initials;
     }
+    if(s.length > 9) s = substring(0,9);
+
+    console.log("Abbreviated to "+s);
     return s;
 }
 
