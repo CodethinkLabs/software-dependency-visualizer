@@ -498,7 +498,7 @@ function setPackageLabelAttributes(selection)
 	.attr("y", function(d, index) { return 24+index*packagesHeight; })
 	.style("fill", "#000000")
 	.attr("width", 150)
-	.attr("onclick",function(d) { return "window.location = 'index.html?package="+d+"';" });
+	.attr("onclick",function(d) { return "window.location = 'showpackage.html?package="+d+"';" });
 }
 
 function setPackageLabelTextAttributes(selection)
