@@ -17,13 +17,16 @@
 import bottle
 import neo4jrestclient.client
 import neo4jrestclient.query
+import os
 import yaml
 
 import argparse
 import json
 import logging
+import re
 import sys
 import urllib.parse
+import unicodedata
 
 
 # This is needed to be able to add Relationships to a set()
@@ -52,6 +55,7 @@ app = bottle.Bottle()
 
 database = neo4jrestclient.client.GraphDatabase(args.neo4j)
 
+package_cache_dir = "package-cache"
 
 @app.route('/')
 @app.route('/examples')
@@ -245,6 +249,38 @@ class Presentation():
             'max_depth': self.max_depth
         }
 
+# Takes an ident passed in the URL (which may be malicious) and return a basic
+# filename which is either safe to use as a file, or an empty string.
+def normalize_filename(rawString):
+    filename = unicodedata.normalize('NFKD', rawString)
+    filename = filename.encode('ascii', 'replace').decode('ascii')
+    filename = re.sub('[^\w\s-]', '', filename).strip().lower()
+    filename = re.sub('[-\s]+', '-', filename)
+    return filename
+
+def update_cache(key, content):
+    if not os.path.exists(package_cache_dir):
+        return
+    if os.path.exists(package_cache_dir):
+        # Convert the key to a filename using a django-style transformation
+        filename = normalize_filename(key)
+        cache_file = open(os.path.join(package_cache_dir, filename), "wt")
+        cache_file.write(content)
+        cache_file.close()
+
+def get_cache(key):
+    if not os.path.exists(package_cache_dir):
+        return None
+    if os.path.exists(package_cache_dir):
+        try:
+            filename = normalize_filename(key)
+            cache_file = open(os.path.join(package_cache_dir, filename), "rt")
+            content = cache_file.read()
+            cache_file.close()
+            return content
+        except FileNotFoundError:
+            return None
+    return None
 
 @app.route('/graph/present/<root_node_identifier>')
 def graph_present(root_node_identifier):
@@ -381,6 +417,10 @@ def graph_present(root_node_identifier):
         return result
 
     root_node_identifier = urllib.parse.unquote(root_node_identifier)
+
+    jsontext = get_cache(root_node_identifier)
+    if jsontext is not None: return jsontext
+
     root_node = lookup_node(root_node_identifier)
     if not root_node:
         raise bottle.HTTPError(status=404)
@@ -388,9 +428,12 @@ def graph_present(root_node_identifier):
     config = Presentation(root_node)
 
     nodes, edges, children = traverse_widthwise(root_node, config)
-    print("List of children:" +str(children))
-    json = encode_as_graphjson(nodes, edges, children, config)
-    return json
+    jsonstruct = encode_as_graphjson(nodes, edges, children, config)
+    jsontext = json.dumps(jsonstruct)
+
+    update_cache(root_node_identifier, jsontext)
+
+    return jsontext
 
 @app.route('/info/<node_identifier>')
 def node_info(node_identifier):
