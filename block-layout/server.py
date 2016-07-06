@@ -153,11 +153,11 @@ def encode_node(node, contents_graphjson=None):
 
     json = {
         '_id': node.id,
-        'uri': node.properties['uri'],
-        'caption': node_name(node),
-        'contains': contents_graphjson or {},
+        'uri': node.properties['uri']
     }
-    print("Caption: "+json['caption'])
+    if contents_graphjson:
+        json['contains'] = contents_graphjson
+
     return json
 
 
