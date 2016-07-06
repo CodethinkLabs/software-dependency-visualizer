@@ -235,12 +235,6 @@ var define, exports, require, module;
             .attr('d', function(d){ return d.path })
             .attr('fill', function(d) { return d.color });
 
-        // Create Packages group for callers
-        this.callers = this.svg
-            .append('g')
-            .attr('class', 'callsIn')
-            .attr('transform', 'translate(0, 0)');
-
         // Create central columns for Objects
         this.cols = [];
         for ( var i = 0; i < this.config.columns; i++ ) {
@@ -254,6 +248,16 @@ var define, exports, require, module;
             .append('g')
             .attr('class', 'callsOut')
             .attr('transform', 'translate(' + (packagesColWidth + this.config.columns * objectsColWidth) +', 0)');
+
+	this.called.append('text').text("Calls to other packages").attr('x','0').attr('y','16');
+
+        // Create Packages group for callers
+        this.callers = this.svg
+            .append('g')
+            .attr('class', 'callsIn')
+            .attr('transform', 'translate(0, 0)');
+
+	this.callers.append('text').text("Calls from other packages").attr('x','0').attr('y','16');
 
         // Create group for Links
         this.links = this.svg
@@ -691,7 +695,6 @@ var define, exports, require, module;
 			return node;
 		    }
 		}
-		console.log("No object found with ID "+id);
 		return null;
 	    }
 
@@ -726,13 +729,18 @@ var define, exports, require, module;
 			    return "";
 			}
 			if(obj.target < 0) {
-			    console.log("Target ID is negative; presuming an external link");
 			    var x1 : number = linkXFunction(source);
                             // TODO: Real fix would be to set lineXOffset to 0, but that will change
                             // the offset of the starting point.
 			    var x2 : number = targetLinkXFunction(_this.config.columns) - lineXOffset;
 			    var y1 : number = linkYFunction(source);
-			    var y2 : number = package1OffsetY + obj.target*-packagesHeight;
+			    var y2 : number = 24+package1OffsetY + obj.target*-packagesHeight;
+			    var x2_control_dx : number = -128;
+			} else if(obj.source < 0) {
+			    var x1 : number = sourceLinkXFunction(_this.config.columns) - lineXOffset;
+			    var x2 : number = linkXFunction(target);
+			    var y1 : number = 24+package1OffsetY + obj.source*-packagesHeight;
+			    var y2 : number = linkYFunction(target);
 			    var x2_control_dx : number = -128;
 			} else {
 			    var x1 : number = linkXFunction(source);
@@ -770,8 +778,12 @@ var define, exports, require, module;
                     .attr("marker-end", "url(#marker_arrow)")
                     .attr('stroke', function(obj) {
 			if (obj.highlight == null) return "#444";
-			var val : string = (10-obj.highlight*8).toString(16);
-			return "#"+val+val+val;
+			return "#000";
+		    })
+		    .attr('stroke-opacity', function(obj) {
+			if (obj.highlight == null) return "0.5";
+			if (obj.highlight == 0) return "0.1";
+			return "1.0";
 		    })
 		    .style("fill", "none");
 	    }

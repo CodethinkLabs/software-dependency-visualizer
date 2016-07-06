@@ -19,6 +19,20 @@ const objectsColWidth = 400;
 const packagesColWidth = 200;
 const packagesHeight = 40;
 
+var d3;
+var $;
+var packageName : string;
+var symbolArray : D3Symbol[] = [];
+var callGraph : Call[] = [];
+var objectCalls = [];
+var externalPackages : string[]= [];
+var calledPackages : string[]= [];
+var callingPackages : string[]= [];
+var animationProgress : number = 0;
+var continueAnimating : boolean = false;
+var circle;
+var graph;
+
 interface Call {
     highlight?: number;
 }
@@ -65,6 +79,7 @@ class GraphDBNode {
     contains: Container;
     _source: number;
     _target: number;
+    uri: string;
 }
 
 var exampleCalls : Call[] = [
@@ -78,10 +93,6 @@ var exampleCalls : Call[] = [
     { source: 13, target: 13 },
     { source: 0, target: 12 },
 ];
-
-var d3;
-var $;
-var packageName : string;
 
 // Add the item to the set unless it's there already, and
 // return the new set. The original is also modified, unless
@@ -111,10 +122,6 @@ function getPositionInSet<T>(set : T[], item : T) : number
 }
 
 
-var symbolArray : D3Symbol[] = [];
-var callGraph : Call[] = [];
-var objectCalls = [];
-var externalPackages : string[]= [];
 
 function countChars(s: string, c:string) : number
 {
@@ -127,27 +134,64 @@ function countChars(s: string, c:string) : number
 
 function abbreviateSymbol(s: string) : string
 {
+    // Strip off any C++ namespaces and class names.
     var x : number = s.lastIndexOf("::")
     if(x>=0) s = s.substring(x+2);
 
+    if(s.length <= 8) return s;
+
     if(s.toUpperCase() != s && s.toLowerCase() != s) {
-	// This looks like mixed case, maybe camelcase
+	// This looks like mixed case, maybe camelcase, so replace this with
+	// the initial characters.
 	var initials : string = "";
 	for(var i:number=0;i<s.length;i++) {
 	    if(s[i].toUpperCase() == s[i]) initials += s[i];
 	}
 	s = initials;
     }
-    else if(countChars(s, '_') > 2 && s.length>5) {
-	// Looks like an underscore-separated name
+    else if(countChars(s, '_') > 0) {
+	// Looks like an underscore-separated name; replace this with lower-case
+	// initialse, so "wiz_rumor_check" becomes "wrc", for example.
 	var initials : string = "";
-	for(var i:number=1;i<s.length;i++) {
-	    if(s[i] == '_' && s[i-1] != '_') initials += s[i-1];
+	if(s[0] != '_') initials += s[0];
+	for(var i:number=0;i<s.length-1;i++) {
+	    if(s[i] == '_') {
+		if(s[i+1] != '_') initials += s[i+1];
+	    }
 	}
 	s = initials;
     }
+    if(s.length > 9) s = s.substring(0,9);
+
+    console.log("Abbreviated to "+s);
     return s;
 }
+
+function startLoadingAnimation()
+{
+    var svg = <HTMLElement> document.querySelector('svg');
+    var svgNS = svg.namespaceURI;
+    circle = document.createElementNS(svgNS,'circle');
+    circle.setAttribute('cx','320');
+    circle.setAttribute('cy','240');
+    circle.setAttribute('r','16');
+    circle.setAttribute('fill','#95B3D7');
+    svg.appendChild(circle);
+    continueAnimating = true;
+    setTimeout(function() { loadingAnimationTick(); }, 40);
+}
+
+function loadingAnimationTick()
+{
+    animationProgress += 1;
+    console.log("Loading animation");
+    circle.setAttribute('cx', 320+64*Math.cos(animationProgress / 25 * Math.PI));
+    circle.setAttribute('cy', 240+64*Math.sin(animationProgress / 25 * Math.PI));
+    if(continueAnimating) {
+	setTimeout(function() {loadingAnimationTick();}, 40);
+    }
+}
+
 
 function database()
 {
@@ -158,26 +202,38 @@ function database()
     objectCalls = [];
     externalPackages = [];
 
+    let title = <HTMLElement> document.querySelector('h1')
+    title.innerHTML = "Loading "+packageName;
+
+    startLoadingAnimation();
+
     $.getJSON('/graph/present/' + nodeid, function (node_info) {
 
+	title.innerHTML = "Loaded "+packageName;
 	var objectCallGraph : { [id: number]: number[] } = {};
 	var nodeToObjectMap : { [id: number]: GraphDBNode } = {};
 	console.log("Displaying node: ", node_info);
 	var pack : GraphDBNode = node_info.nodes[0];
 	console.log("Package returned: "+pack.caption);
+	var objectsInPackage : { [id: number]: boolean } = {};
+	for(var o=0;o<pack.contains.nodes.length;o++) {
+	    var object : GraphDBNode = pack.contains.nodes[o];
+	    objectsInPackage[object._id] = true;
+	}
+	var localNodes : {[Identifier:number]:boolean} = {}; // Is this node ID inside this package?
+	var externalSyms : {[Identifier:number]:number} = {};
+	var nodeToPackageMap : { [id: number]: string } = {};
 	for(var o=0;o<pack.contains.nodes.length;o++) {
 	    var object : GraphDBNode = pack.contains.nodes[o];
 	    console.log("Recording object "+object.caption);
-	    var localNodes : {[Identifier:number]:boolean} = {};
-	    var externalSyms : {[Identifier:number]:number} = {};
 	    for (var s=0;s<object.contains.nodes.length;s++) {
 		var node : GraphDBNode = object.contains.nodes[s];
 		if(node.caption == "") {
 		    console.log("Loaded object with no caption! id: "+node._id);
 		}
-		if(node.parent) { // Nodes without parents are external symbols, which are ignored at the moment.
+		if(node.parent) { // Nodes without parents are external symbols
 		    if(node.parent != object._id) {
-			console.log("Symbol "+node._id+ " is in the wrong parent and will not be recorded (symbol parent "+node.parent+", object id "+object._id);
+			console.log("Symbol "+node.caption+ "/"+node._id+" is misparented and should be treated as external (symbol parent "+node.parent+", object id "+object._id);
 		    } else {
 			symbolArray.push( { "symbolName": node.caption, "shortName": abbreviateSymbol(node.caption), "parent": object.caption, "sortIndex": 0, "_id": node._id});
 			console.log("Recording map of symbol "+node._id+" to object "+object._id)
@@ -186,17 +242,27 @@ function database()
 			}
 			nodeToObjectMap[node._id] = object;
 		    }
-		    localNodes[node._id] = true;
-		} else {
-		    // Possible external package?
+		    if(objectsInPackage[node.parent] == true) {
+			localNodes[node._id] = true;
+		    }
+		}
+		if(localNodes[node._id] != true) {
+		    // The general format of URIs is id:<package>:<object>:<symbol>
+		    // Some however will be EXTERNAL:<symbol>
 		    var externalPackage : string;
-		    externalPackage = node.caption.substring(3);
-		    var x: number = externalPackage.indexOf(":");
-		    console.log("Possible external package: "+externalPackage);
-		    externalPackage = externalPackage.substring(0,x);
-		    if(externalPackage != "NULL" && externalPackage != packageName) {
-			externalPackages = addToSet(externalPackages, externalPackage);
-			externalSyms[node._id] = getPositionInSet(externalPackages, externalPackage);
+		    var uriParts : string[] = node.uri.split(':');
+		    if(uriParts.length < 2) {
+			console.log("Unparseable URI: "+node.uri);
+		    } else {
+			externalPackage = uriParts[1];
+			nodeToPackageMap[node._id] = externalPackage;
+			console.log("Possible external package: "+externalPackage);
+			if(uriParts[0] != "NULL" && uriParts[0] != "EXTERNAL" && externalPackage != packageName) { // "EXTERNAL" is a silly name; here it means external to the whole package-universe, not external to this package :(
+			    externalPackages = addToSet(externalPackages, externalPackage);
+			    var pos : number = getPositionInSet(externalPackages, externalPackage);
+			    externalSyms[node._id] = pos+1;
+			    console.log(externalPackage + "/"+node._id+" is recorded as external package "+pos);
+			}
 		    }
 		}
 	    }
@@ -210,8 +276,23 @@ function database()
 		}
 		else if(localNodes[edge._source] == true && externalSyms[edge._target]>=0) {
 		    // That's a call outwards
+
+		    var calledPackage : string = nodeToPackageMap[edge._target];
+		    calledPackages = addToSet(calledPackages, calledPackage);
+		    var pos : number = getPositionInSet(calledPackages, calledPackage);
+
 		    console.log("Source symbol "+edge._source+" calls external symbol "+edge._target);
-		    callGraph.push( { source: edge._source, target: -externalSyms[edge._target] } );
+		    callGraph.push( { source: edge._source, target: -pos-1 } );
+		}
+		else if(externalSyms[edge._source] >= 0 && localNodes[edge._target]==true) {
+		    // That's a call inwards
+
+		    var callingPackage : string = nodeToPackageMap[edge._source];
+		    callingPackages = addToSet(callingPackages, callingPackage);
+		    var pos : number = getPositionInSet(callingPackages, callingPackage);
+
+		    console.log("External symbol "+edge._source+" calls local symbol "+edge._target);
+		    callGraph.push( { source: -pos-1, target: edge._target } );
 		}
 	    }
 	}
@@ -224,11 +305,11 @@ function database()
 		objectCalls.push([callingObject, value]);
 	    });
 	});
+	continueAnimating = false;
+	title.innerHTML = "Package "+packageName;
 
         update();
     });
-    let title = <HTMLElement> document.querySelector('h1')
-    title.innerHTML = packageName;
 }
 
 function update()
@@ -236,12 +317,15 @@ function update()
     graph = initGraph();
     graph.data(symbolArray, callGraph, objectCalls);
 
-    var calloutNodes = d3.select(".callsOut").selectAll("rect").data(externalPackages);
+    var calloutNodes = d3.select(".callsOut").selectAll("rect").data(calledPackages);
     var group = calloutNodes.enter().append("g");
     setPackageLabelAttributes(group.append("rect"));
     setPackageLabelTextAttributes(group.append("text"));
 
-    calloutNodes.data(externalPackages);
+    var callinNodes = d3.select(".callsIn").selectAll("rect").data(callingPackages);
+    var group = callinNodes.enter().append("g");
+    setPackageLabelAttributes(group.append("rect"));
+    setPackageLabelTextAttributes(group.append("text"));
 }
 
 var blockSize : number = 64;
@@ -282,6 +366,10 @@ function targetLinkXFunction(colsNumber) {
     return  objectsColWidth * colsNumber + packagesColWidth;
 }
 
+function sourceLinkXFunction(colsNumber) {
+    return 150;
+}
+
 function nodeTranslationFunction (obj) { var x = nodeXFunction(obj);
 					 var y = nodeYFunction(obj);
 					 return "translate ("+x+" "+y+")"; }
@@ -292,7 +380,7 @@ function noop() : void
 
 function nodeDrawCallback(_this, thing)
 {
-    group = thing.append('g');
+    var group = thing.append('g');
     group.attr( "transform", nodeTranslationFunction );
     group.append('rect').attr('x', 0)
         .attr('y', 0)
@@ -324,7 +412,8 @@ function nodeDrawCallback(_this, thing)
             _this.tip.hide();
             _this.config.onClick(obj);
         });
-    group.append('text').attr('x', 0).attr('y', (_this.config.blockSize)/2).attr("fill", "#000").text(function(obj) { return obj.shortName || obj.symbolName; });
+    group.append('text').attr('x', 0).attr('y', (_this.config.blockSize)/2).attr("fill", "#000").text(function(obj) {     console.log("Drawing symbol: shortname "+obj.shortName+", long "+obj.symbolName);
+															  return obj.shortName || obj.symbolName; });
     group.attr('class', 'relationshipGraph-node');
 }
 
@@ -414,27 +503,20 @@ function initGraph()
     });
 }
 
-var graph = initGraph();
-
-var interval = null;
-
-// Thing to add all the callers
-var data = [ "A", "B", "C", "D" ];
-
 function setPackageLabelAttributes(selection)
 {
     selection.attr("height", function(d) { return packagesHeight - 6; })
 	.attr("x", 0).attr("rx", 4).attr("ry", 4)
-	.attr("y", function(d, index) { return index*packagesHeight; })
+	.attr("y", function(d, index) { return 24+index*packagesHeight; })
 	.style("fill", "#000000")
 	.attr("width", 150)
-	.attr("onclick",function(d) { return "window.location = 'index.html?package="+d+"';" });
+	.attr("onclick",function(d) { return "window.location = 'showpackage.html?package="+d+"';" });
 }
 
 function setPackageLabelTextAttributes(selection)
 {
     selection.attr("x", 10)
-	.attr("y", function(d, index) { return index*packagesHeight+packagesHeight/2; })
+	.attr("y", function(d, index) { return 24+index*packagesHeight+packagesHeight/2; })
 	.style("fill", "#ffffff")
 	.text(function(d) { return d });
 }
@@ -464,10 +546,13 @@ function example() {
     title.innerHTML = "Example data";
 }
 
-var group = d3.select(".callsIn").selectAll("rect").data(data).enter().append("g");
-setPackageLabelAttributes(group.append("rect"));
-setPackageLabelTextAttributes(group.append("text"));
+// Start everything moving
 
 var vars = getUrlVars();
-packageName = vars['package'] || "libhfr"
-var nodeid = "id:"+packageName;
+var packageName : string = vars['package'] || "a"
+var nodeid : string = "id:"+packageName;
+if(packageName == "example") {
+    example()
+} else {
+    database()
+}

@@ -463,6 +463,11 @@ def node_info(node_identifier):
         'calls': relations_info(node, 'outgoing', 'sw:calls')
     }
 
+@app.route('/packagelist')
+def package_list():
+    packages = database.query("match (n:Package) return n.name", returns=(str))
+    print(repr(packages))
+    return ",".join(sorted(x[0] for x in packages))
 
 #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 

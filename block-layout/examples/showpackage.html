@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Software visualization demo</title>
+
+    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script src="../src/d3-tip.js"></script>
+    <script src="../src/index.js"></script>
+    <script type="text/javascript" src="resources/jquery/dist/jquery.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="../dest/d3.relationshipgraph.min.css">
+    <link type="text/css" rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+    <!-- Optional theme -->
+            <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap-theme.min.css">
+</head>
+<body>
+<a href="index.html">Return to package index</A> &bull; Click on a symbol to highlight the call chain to and from that symbol. Click on a package on the left or right side to view that package.
+<h1 style="text-align: center; font-family: Helvetica, sans-serif; color: #323232">Package visualization demo</h1>
+<div class="mini-layout">
+  <div class="col-md-12 mini-layout-body">
+    <div id="graph" style="margin: 20px auto;">
+      <!-- This SVG exists just to display the loading animation and will be removed when we have data to display. -->
+      <svg width=640 height=480></svg>
+      </div>
+      <br/>
+  </div>
+</div>
+<script src=object-view-demo.js>
+</script>
+</body>
+</html>
