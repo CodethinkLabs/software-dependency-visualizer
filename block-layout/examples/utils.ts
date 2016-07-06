@@ -48,6 +48,10 @@ function targetLinkXFunction(colsNumber, colWidth) {
 
 }
 
+function sourceLinkXFunction(colsNumber) {
+        return 150;
+}
+
 // Some optional properties in a D3Symbol. TypeScript doesn't yet support
 // optional properties directly in the class, and we want to initialize
 // without specifying these values.
