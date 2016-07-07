@@ -73,13 +73,18 @@ class Container {
 
 // All nodes returned by the graph database fit this pattern.
 class GraphDBNode {
-    caption: string;
     parent: number;
     _id: number;
     contains: Container;
     _source: number;
     _target: number;
     uri: string;
+}
+
+function makeCaption(node : GraphDBNode) : string
+{
+    var uriParts : string[] = node.uri.split(':');
+    return uriParts[uriParts.length-1];
 }
 
 var exampleCalls : Call[] = [
@@ -207,35 +212,35 @@ function database()
 
     startLoadingAnimation();
 
-    $.getJSON('/graph/present/' + nodeid, function (node_info) {
+    $.getJSON('/graph/present/' + nodeid, function (node_info : Container) {
 
 	title.innerHTML = "Loaded "+packageName;
 	var objectCallGraph : { [id: number]: number[] } = {};
 	var nodeToObjectMap : { [id: number]: GraphDBNode } = {};
 	console.log("Displaying node: ", node_info);
-	var pack : GraphDBNode = node_info.nodes[0];
-	console.log("Package returned: "+pack.caption);
+	var packageNode : GraphDBNode = node_info.nodes[0];
+	console.log("Package returned: "+makeCaption(packageNode));
 	var objectsInPackage : { [id: number]: boolean } = {};
-	for(var o=0;o<pack.contains.nodes.length;o++) {
-	    var object : GraphDBNode = pack.contains.nodes[o];
+	for(var o=0;o<packageNode.contains.nodes.length;o++) {
+	    var object : GraphDBNode = packageNode.contains.nodes[o];
 	    objectsInPackage[object._id] = true;
 	}
 	var localNodes : {[Identifier:number]:boolean} = {}; // Is this node ID inside this package?
 	var externalSyms : {[Identifier:number]:number} = {};
 	var nodeToPackageMap : { [id: number]: string } = {};
-	for(var o=0;o<pack.contains.nodes.length;o++) {
-	    var object : GraphDBNode = pack.contains.nodes[o];
-	    console.log("Recording object "+object.caption);
+	for(var o=0;o<packageNode.contains.nodes.length;o++) {
+	    var object : GraphDBNode = packageNode.contains.nodes[o];
+	    console.log("Recording object "+makeCaption(object));
 	    for (var s=0;s<object.contains.nodes.length;s++) {
 		var node : GraphDBNode = object.contains.nodes[s];
-		if(node.caption == "") {
+		if(makeCaption(node) == "") {
 		    console.log("Loaded object with no caption! id: "+node._id);
 		}
 		if(node.parent) { // Nodes without parents are external symbols
 		    if(node.parent != object._id) {
-			console.log("Symbol "+node.caption+ "/"+node._id+" is misparented and should be treated as external (symbol parent "+node.parent+", object id "+object._id);
+			console.log("Symbol "+makeCaption(node)+ "/"+node._id+" is misparented and should be treated as external (symbol parent "+node.parent+", object id "+object._id);
 		    } else {
-			symbolArray.push( { "symbolName": node.caption, "shortName": abbreviateSymbol(node.caption), "parent": object.caption, "sortIndex": 0, "_id": node._id});
+			symbolArray.push( { "symbolName": makeCaption(node), "shortName": abbreviateSymbol(makeCaption(node)), "parent": makeCaption(object), "sortIndex": 0, "_id": node._id});
 			console.log("Recording map of symbol "+node._id+" to object "+object._id)
 			if(nodeToObjectMap[node._id]) {
 			    console.log("Warning: symbol "+node._id+" was already mapped to "+nodeToObjectMap[node._id]._id);
@@ -267,8 +272,8 @@ function database()
 		}
 	    }
 	}
-	for(var o=0;o<pack.contains.nodes.length;o++) {
-	    var object = pack.contains.nodes[o];
+	for(var o=0;o<packageNode.contains.nodes.length;o++) {
+	    var object = packageNode.contains.nodes[o];
 	    for (var e=0;e<object.contains.edges.length;e++) {
 		var edge = object.contains.edges[e];
 		if(localNodes[edge._source] == true && localNodes[edge._target] == true) {
