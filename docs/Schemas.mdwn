@@ -1,0 +1,100 @@
+# Graph database schema
+
+The schema of data in the database is very simple. There are three
+classes of nodes: Packages, objects and symbols.
+
+* Packages are analogous to the packages in most Linux-based operating
+  system, and contain multiple objects.
+
+* Objects can be any group of functions, but are meant to be a single
+  source file, and contain all the symbols which are defined inside
+  it.
+
+* Symbols are functions exposed by the compiler. Data symbols should
+  not be considered nodes.
+
+There are two relations: Contains and calls.
+
+* A package has a "Contains" relation to zero or more objects, and an
+  object contains zero or more symbols. A symbol should not contain
+  anything. The 'contains' graph should only move down the node
+  hierarchy.
+
+* "Calls" are intended to be between symbols. A symbol may
+  call another symbol which calls it, and a symbol may call itself, so
+  the call graph can contain cycles.
+
+* For performance reasons, "calls" relationships may exist between
+  packages and objects. A 'calls' relationship between two packages
+  means that symbols in the first package can reach symbols in the
+  second package by any traversal of 'calls' relations between
+  symbols. Since this inferred 'calls' relation is redundant in the
+  database, we would prefer to find another solution, but experiments
+  show calculating it from symbol-to-symbol calls could be
+  unreasonably slow.
+
+# JSON data returned to the web front end
+
+The JSON format is best described by the data structures in TypeScript:
+
+    // This is the contents of a 'contains' relationship.
+    class Container {
+        nodes: GraphDBNode[]
+        edges: GraphDBNode[]
+    }
+
+    // All nodes returned by the graph database fit this pattern.
+    class GraphDBNode {
+        parent: number;
+        _id: number;
+        contains: Container;
+        _source: number;
+        _target: number;
+        uri: string;
+     }
+
+The JSON returned by server.py for a "graph/present" query is an array
+which contains one element, which is a GraphDBNode representing the
+package.  GraphDBNode repesents both nodes and edges (so is
+misnamed). Nodes should contain at least 'uri', '_id' and
+'parent'. Edges should contain 'uri', '_source' and '_target'.
+
+So, a very simple package might look like this:
+
+    Package : GraphDBNode
+      _id: 1
+      parent: null
+      uri: id:n
+      contains:
+        edges: []
+	nodes:
+	  Object : GraphDBNode
+	    _id: 4
+	    parent: 1
+	    uri: id:n:network
+	    contains:
+	      edges:
+	        Call : GraphDBNode
+		  _source: 94
+		  _target: 200
+	      nodes:
+	        Symbol : GraphDBNode
+		  _id: 94
+		  parent: 4
+		  uri: id:n:network:getUpdate
+	        Symbol : GraphDBNode
+		  _id: 200
+		  parent: 4
+		  uri: id:n:network:resolveName
+
+'parent' may appear to be redundant here, but the 'contains' field of
+an object may contain symbol nodes which are not part of the
+object. In order to represent the call graph, server.py places all the
+nodes which are either inside the object or the source or target of
+calls of symbols in the object inside the object's "contains"
+field. The 'edges' list then links those together. While it isn't
+strictly necessary to include the full symbol for things outside this
+package, we do need to know the uri, so that information must exist
+somewhere. Hence, 'parent' is used to distinguish symbols in the
+current object from symbols outside it. You could potentially also
+figure this out from the uri.
