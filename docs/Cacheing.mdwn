@@ -1,0 +1,18 @@
+# Cacheing responses to front-end queries
+
+There are two places in this project where cacheing can speed up page load times: We can cache the entirety of the JSON object returned to the client for a given package by server.py, and we can also cache the reponse from Neo4J (or any other database) to server.py. Cacheing the response from server.py has the most noticable effect on the user experience; it can cut page load times from 100s to 1s for some of our Nethack-based examples.
+
+# Front-end cacheing
+
+Pull request #41 added a very basic JSON cache to server.py. If there's a directory called 'package-cache' in the CWD when server.py is run, it will be used as a cache. Package names (generally of the ford "id:a") are used as keys, with some sanitisation to make sure any string passed in is a valid, basic filename. There is no expiry or validation of the cache; if you want to invalidate the cache, you must delete the file in the package-cache directory. You can disable the cache entirely just by removing or renaming the package-cache directory. Cache files in our Nethack demo range up to 2.7MB in size, with the average being around 750kb.
+
+# Backend-to-database cacheing
+
+neo4jrestclient contains an option called options.CACHE which says it will cache the results of queries to the database, but this didn't work for me. This uses the cachecontrol library to wrap the requests sent to neo4j. However, the rules cachecontrol uses will only cache a response if it has headers that can be used to determine its lifetime, or freshness[1]. Since the headers returned by Neo4J don't include any Cache-Control or max-age headers, cachecontrol won't cache it. It's also difficult to see how neo4j could suggest cache lifetime for a response, since it could be modified by any other request instantly.
+
+We can modify cachecontrol so that it ignores those rules and uses a cache anyway, since we know when the database is updated and can manually clear the cache if need, but this can't be a permanent change to cachecontrol, nor can we fix it in neo4jrestclient. If we want to do this type of cacheing, it would be better to do it inside server.py again.
+
+I've raised a bug against neo4jrestclient which suggests that we remove the CACHE option from the documentation, since it appears to be misleading.
+
+[1] https://github.com/ionrock/cachecontrol/blob/master/cachecontrol/controller.py
+
