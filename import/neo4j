@@ -98,16 +98,33 @@ def data_type(values):
             raise ValueError("Data specifies neither @value nor @id")
     return kind
 
+def _createRelationship(node, key, target, wipeDatabase):
+    if wipeDatabase:
+        existing_rels = []
+    else:
+        existing_rels = graph.match(
+            start_node=node,
+            rel_type=key,
+            end_node=target,
+            limit=2)
+    print("Existing relations for %s->%s: %d"%(node, target, len(list(existing_rels))))
+    if len(list(existing_rels)) == 0:
+        relationship = py2neo.Relationship(node, key, target)
+        relationship.properties['name'] = compact_uri(key, context)
+        graph.create_unique(relationship)
+
 
 def createRelationships(node, relationships, context, graph, wipeDatabase):
+    target_packages = []
+    package_orig = None
     for key, value in relationships.items():
         # We always use the short version of a key name to name
         # relationships. This means that the data requires the context
         # to make sense. But it is totally unreadable to have
         # properties named <http://example.com/property-name>, and we
         # avoid that this way.
-
         key = compact_uri(key, context)
+
 
         if not isinstance(value, list):
             value = [value]
@@ -124,22 +141,26 @@ def createRelationships(node, relationships, context, graph, wipeDatabase):
                     continue
                 target_uri = target['@id']
             else:
+
                 target_uri = target
 
             target = find_or_create_node_by_uri(graph, target_uri)
-            if wipeDatabase:
-                existing_rels = []
-            else:
-                existing_rels = graph.match(
-                    start_node=node,
-                    rel_type=key,
-                    end_node=target,
-                    limit=2)
-            print("Existing relations for %s->%s: %d"%(node, target, len(list(existing_rels))))
-            if len(list(existing_rels)) == 0:
-                relationship = py2neo.Relationship(node, key, target)
-                relationship.properties['name'] = compact_uri(key, context)
-                graph.create_unique(relationship)
+            # If we are creating a sw:calls between symbols, create also a sw:calls between
+            # packages.
+            if key == "sw:calls":
+                package_target_uri = target_uri.rsplit(':', 2)[0]
+                # Check if this relationship has been already created in this run
+                if package_target_uri not in target_packages:
+                    if not package_orig:
+                        package_orig_uri = node['uri'].rsplit(':', 2)[0]
+                        package_orig = find_or_create_node_by_uri(graph, package_orig_uri)
+                    target_packages.append(package_target_uri)
+                    if package_orig_uri != package_target_uri:
+                        package_target = find_or_create_node_by_uri(graph, package_target_uri)
+
+                        _createRelationship(package_orig, key, package_target)
+
+            _createRelationship(node, key, target, wipeDatabase)
 
 def main():
     args = argument_parser().parse_args()
