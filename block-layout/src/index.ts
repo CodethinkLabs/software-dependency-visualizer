@@ -243,22 +243,23 @@ var define, exports, require, module;
                 .attr('transform', 'translate(' + (packagesColWidth + i * objectsColWidth) +', 0)'));
         }
 
-        // Create Packages group for called
-        this.called = this.svg
-            .append('g')
-            .attr('class', 'callsOut')
-            .attr('transform', 'translate(' + (packagesColWidth + this.config.columns * objectsColWidth) +', 0)');
+	if (packagesColWidth > 0) {
+            // Create Packages group for called
+            this.called = this.svg
+		.append('g')
+		.attr('class', 'callsOut')
+		.attr('transform', 'translate (' + (packagesColWidth + this.config.columns * objectsColWidth) +', 0)');
 
-	this.called.append('text').text("Calls to other packages").attr('x','0').attr('y','16');
+	    this.called.append('text').text("Calls to other packages").attr('x','0').attr('y','16');
 
-        // Create Packages group for callers
-        this.callers = this.svg
-            .append('g')
-            .attr('class', 'callsIn')
-            .attr('transform', 'translate(0, 0)');
+            // Create Packages group for callers
+            this.callers = this.svg
+		.append('g')
+		.attr('class', 'callsIn')
+		.attr('transform', 'translate(0, 0)');
 
-	this.callers.append('text').text("Calls from other packages").attr('x','0').attr('y','16');
-
+ 	    this.callers.append('text').text("Calls from other packages").attr('x','0').attr('y','16');
+	}
         // Create group for Links
         this.links = this.svg
             .append('g')
