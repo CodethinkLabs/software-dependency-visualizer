@@ -178,11 +178,20 @@ def encode_node(node, contents_graphjson=None):
 def encode_relationship(relationship):
     '''Represent a relationship as GraphJSON data, ready to send to client.'''
     print("Attempting to encode relationship: "+repr(relationship))
-    json = {
-        '_source': relationship.start.id,
-        '_target': relationship.end.id,
-        'type': relationship.type,
-    }
+    # For some reason, neo4jrestclient, in some queries will return dicts
+    # instead of objects
+    if isinstance(relationship, dict):
+        json = {
+            '_source': relationship['start'].split('/')[-1],
+            '_target': relationship['end'].split('/')[-1],
+            'type': relationship['type'],
+        }
+    else:
+        json = {
+            '_source': relationship.start.id,
+            '_target': relationship.end.id,
+            'type': relationship.type,
+        }
     print("Attempting to encode relationship: %s = %s"%(repr(relationship), repr(json)))
     return json
 
