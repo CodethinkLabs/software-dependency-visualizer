@@ -33,6 +33,9 @@ var $;
 var packageName : string;
 const packageBlockSize : number = 80;
 
+var fromSelect = $("#from_select");
+var toSelect = $("#to_select");
+
 // Add the item to the set unless it's there already, and
 // return the new set. The original is also modified, unless
 // it's null or undefined.
@@ -104,14 +107,12 @@ function abbreviateSymbol(s: string) : string
 }
 
 function loadpackages(){
-    var from_select = $("#from_select");
-    var to_select = $("#to_select");
     $.getJSON('/nodes/type/Package', function (package_nodes) {
-        from_select.empty()
-        to_select.empty()
+        fromSelect.empty()
+        toSelect.empty()
         $.each(package_nodes, function() {
-            from_select.append($("<option />").val(this._id).text(this.caption));
-            to_select.append($("<option />").val(this._id).text(this.caption));
+            fromSelect.append($("<option />").val(this._id).text(this.caption));
+            toSelect.append($("<option />").val(this._id).text(this.caption));
         });
     });
 }
@@ -125,6 +126,11 @@ function database()
     callGraph = [];
     objectCalls = [];
     externalPackages = [];
+
+    var fromPackageId = fromSelect.val();
+    var toPackageId = toSelect.val();
+
+    console.log("WOHA!: ", fromPackageId, toPackageId);
 
     $.getJSON('/graph/present/' + nodeid, function (node_info) {
 
@@ -370,22 +376,6 @@ function setPackageLabelTextAttributes(selection)
 	.text(function(d) { return d });
 }
 
-
-// Read a page's GET URL variables and return them as an associative array.
-// From http://jquery-howto.blogspot.co.uk/2009/09/get-url-parameters-values-with-jquery.html
-function getUrlVars()
-{
-    var vars = [], hash;
-    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
-    for(var i = 0; i < hashes.length; i++)
-    {
-	hash = hashes[i].split('=');
-	vars.push(hash[0]);
-	vars[hash[0]] = hash[1];
-    }
-    return vars;
-}
-
 function example() {
     graph = initGraph();
     symbolArray = exampleJSON;
@@ -399,6 +389,4 @@ var group = d3.select(".callsIn").selectAll("rect").data(data).enter().append("g
 setPackageLabelAttributes(group.append("rect"));
 setPackageLabelTextAttributes(group.append("text"));
 
-var vars = getUrlVars();
-packageName = vars['package'] || "libhfr"
 var nodeid = "id:"+packageName;
