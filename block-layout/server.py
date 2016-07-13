@@ -292,11 +292,13 @@ def graph_present(root_node_identifier):
     def traverse_widthwise(start_node, config, depth=0):
         logging.debug("Traversing widthwise from '%s'" % node_name(start_node))
 
+        #finds all relationships from start_node
         paths = traverse_paths(start_node, stop=config.max_width,
                                types=config.width_relationships)
 
         nodes = set([start_node])
         edges = set()
+        # find children nodes, and go down recursively
         children = {
             start_node: find_children(start_node, config, depth=depth)
         }
@@ -311,6 +313,12 @@ def graph_present(root_node_identifier):
                 contents = find_children(end_node, config, depth=depth)
                 children[end_node] = contents
 
+        print("NODES")
+        print(nodes)
+        print("EDGES")
+        print(edges)
+        print("CHILDREN")
+        print(children)
         return nodes, edges, children
 
     def find_children(parent_node, config, depth=0):
@@ -319,6 +327,7 @@ def graph_present(root_node_identifier):
 
         logging.debug("Finding children of %s" % node_name(parent_node))
 
+        # find immediate children
         child_nodes = traverse_nodes(parent_node, stop=1,
                                      direction=neo4jrestclient.client.Outgoing,
                                      types=config.depth_relationships)
@@ -405,6 +414,41 @@ def graph_present(root_node_identifier):
     print("List of children:" +str(children))
     json = encode_as_graphjson(nodes, edges, children, config)
     return json
+
+
+
+@app.route('/graph/packages/route/<start_node>/<end_node>')
+def graph_packages_route(start_node, end_node):
+
+    start_node = urllib.parse.unquote(start_node)
+    end_node = urllib.parse.unquote(end_node)
+
+    print("Finding routes between %s and %s" % (start_node, end_node))
+
+    result =  {}
+
+    q = """start n1 = node(%s), n2 = node(%s)
+           match (n1)-[r1:`sw:contains`]->(o1)-[r2:`sw:contains`]->(s1)-[r3:`sw:calls`*1..4]->(sn)<-[r4:`sw:contains`]-(o2)<-[r5:`sw:contains`]-(n2)
+           return s1, sn""" % (start_node, end_node)
+#s1, r3, sn
+    print(q)
+    start_sym = database.query(
+        q, returns=(neo4jrestclient.client.Node))
+    print("node")
+    for node in start_sym:
+        print(node)
+        #node_json = encode_node(node[0])
+        #result[node_json['caption']] = node_json
+    print("rel")
+    for r in rel:
+        print(r)
+    print("other")
+    for sym in other:
+        print(sym)
+
+    return "final"
+
+
 
 @app.route('/info/<node_identifier>')
 def node_info(node_identifier):
