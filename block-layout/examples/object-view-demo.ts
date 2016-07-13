@@ -1,5 +1,6 @@
 /// <reference path="exampleData.ts" />
 /// <reference path="nodePositioning.ts" />
+/// <reference path="loadingAnimation.ts" />
 
 const objectsColWidth = 400;
 const packagesColWidth = 200;
@@ -14,9 +15,6 @@ var objectCalls = [];
 var externalPackages : string[]= [];
 var calledPackages : string[]= [];
 var callingPackages : string[]= [];
-var animationProgress : number = 0;
-var continueAnimating : boolean = false;
-var circle;
 var graph;
 
 interface Call {
@@ -146,30 +144,6 @@ function abbreviateSymbol(s: string) : string
     return s;
 }
 
-function startLoadingAnimation()
-{
-    var svg = <HTMLElement> document.querySelector('svg');
-    var svgNS = svg.namespaceURI;
-    circle = document.createElementNS(svgNS,'circle');
-    circle.setAttribute('cx','320');
-    circle.setAttribute('cy','240');
-    circle.setAttribute('r','16');
-    circle.setAttribute('fill','#95B3D7');
-    svg.appendChild(circle);
-    continueAnimating = true;
-    setTimeout(function() { loadingAnimationTick(); }, 40);
-}
-
-function loadingAnimationTick()
-{
-    animationProgress += 1;
-    console.log("Loading animation");
-    circle.setAttribute('cx', 320+64*Math.cos(animationProgress / 25 * Math.PI));
-    circle.setAttribute('cy', 240+64*Math.sin(animationProgress / 25 * Math.PI));
-    if(continueAnimating) {
-	setTimeout(function() {loadingAnimationTick();}, 40);
-    }
-}
 
 
 function database()
@@ -284,7 +258,7 @@ function database()
 		objectCalls.push([callingObject, value]);
 	    });
 	});
-	continueAnimating = false;
+	stopLoadingAnimation();
 	title.innerHTML = "Package "+packageName;
 
         update();
