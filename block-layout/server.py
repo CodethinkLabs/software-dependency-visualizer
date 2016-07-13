@@ -458,6 +458,72 @@ def graph_present(root_node_identifier):
 
     return jsontext
 
+
+@app.route('/graph/packages/route/<start_node>/<end_node>')
+def graph_packages_route(start_node, end_node):
+    '''
+    Return a graph with edges and nodes for routes from <start_node>
+    to <end_node>.
+
+    Edges and nodes will be packages, and calls to other packages.
+    '''
+    def find_node_by_id(node_id):
+        q = "MATCH (n) where id(n) = %s return n" % (node_id)
+        nodes = database.query(q, returns=(neo4jrestclient.client.Node))
+
+        # We assume that there is only one node with the same id
+        return nodes[0][0]
+
+    start_node = urllib.parse.unquote(start_node)
+    end_node = urllib.parse.unquote(end_node)
+
+    nodes_graphjson = []
+    edges_graphjson = []
+    nodes_added = []
+
+    print("Finding routes between %s and %s" % (start_node, end_node))
+
+    result =  {}
+
+    # TODO: This query should be more efficient, and not limiting the number of results
+
+    q = """match (a:Package)-[r:`sw:calls`*]->(b:Package)
+           where id(a) = %s and id(b) = %s
+           return a, r, b
+           limit 1""" % (start_node, end_node)
+
+    # TODO: If we decide to not have sw:calls between packages, we will have to do a more
+    # complicated query like:
+    #    q = """start n1 = node(%s), n2 = node(%s)
+    #           match (n1)-[r1:`sw:contains`]->(o1)-[r2:`sw:contains`]->(s1)-[r3:`sw:calls`*1..4]->(sn)<-[r4:`sw:contains`]-(o2)<-[r5:`sw:contains`]-(n2)
+    #           return s1, r3, sn""" % (start_node, end_node)
+    start_sym = database.query(
+        q, returns=(neo4jrestclient.client.Node))
+    for start_node_info, relations, end_node_info in start_sym:
+        for rel in relations:
+            # TODO: modify relations that involve start or end node?
+            rel_json = encode_relationship(rel)
+            edges_graphjson.append(rel_json)
+
+            # Add nodes that are involved in the relationship
+            relation_nodes = [rel['start'], rel['end']]
+            for node_long_id in relation_nodes:
+                node_id = node_long_id.split('/')[-1]
+                if node_id not in nodes_added:
+                    nodes_added.append(node_id)
+                    node = find_node_by_id(node_id)
+                    print(node)
+                    nodes_graphjson.append(encode_node(node))
+
+
+    result = {
+        'nodes': nodes_graphjson,
+        'edges': edges_graphjson,
+    }
+
+    return result
+
+
 @app.route('/info/<node_identifier>')
 def node_info(node_identifier):
     '''Return information about a resource, given its URI or compact URI.
