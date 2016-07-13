@@ -175,10 +175,10 @@ function database()
 		objectCalls.push([callingObject, value]);
 	    });
 	});
-	stopLoadingAnimation();
 	title.innerHTML = "Package "+packageName;
 
         update();
+	stopLoadingAnimation();
     });
 }
 
