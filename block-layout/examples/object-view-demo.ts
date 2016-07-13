@@ -324,7 +324,7 @@ function initGraph()
         'showTooltips': true,
         'maxChildCount': 3,
 	'showKeys': false,
-	'blockSize': 32,
+	'blockSize': blockSize,
 	'nodeDrawCallback': nodeDrawCallback,
 	'onClick': symbolClickCallback
     });

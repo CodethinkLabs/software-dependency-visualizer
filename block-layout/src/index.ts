@@ -803,9 +803,7 @@ var define, exports, require, module;
         // Update existing child nodes.
         for (i = 0; i < childrenNodes.length; i++) {
             childrenNodes[i].transition(_this.config.transitionTime)
-                .attr( "transform", function(obj) { var x = 32 + ((obj.index - 1) * _this.config.blockSize);
-                                                    var y = nodeYFunction(obj);
-                                                    return "translate ("+x+" "+y+")"; })
+                .attr( "transform", nodeTranslationFunction)
                 .style('fill', function(obj) {
                     return _this.config.colors[obj.color % _this.config.colors.length] || _this.config.colors[0];
                 });
