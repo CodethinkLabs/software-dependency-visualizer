@@ -1,19 +1,8 @@
-var exampleJSON = [
-    { "symbolName": "Sym1", "parent": "d3d.o", "sortIndex": 0, "_id": 0 },
-    { "symbolName": "Sym2", "parent": "d3d.o", "sortIndex": 1, "_id": 1 },
-    { "symbolName": "Sym3", "parent": "d3d.o", "sortIndex": 2, "_id": 2 },
-    { "symbolName": "Sym4", "parent": "d3d.o", "sortIndex": 2, "_id": 3 },
-    { "symbolName": "Sym1", "parent": "ttf.o", "sortIndex": 0, "_id": 4 },
-    { "symbolName": "Sym2", "parent": "ttf.o", "sortIndex": 0, "_id": 5 },
-    { "symbolName": "Sym3", "parent": "ttf.o", "sortIndex": 0, "_id": 6 },
-    { "symbolName": "Sym1", "parent": "alx.o", "sortIndex": 0, "_id": 7 },
-    { "symbolName": "Sym2", "parent": "alx.o", "sortIndex": 1, "_id": 8 },
-    { "symbolName": "Sym3", "parent": "alx.o", "sortIndex": 2, "_id": 9 },
-    { "symbolName": "Sym1", "parent": "klf.o", "sortIndex": 0, "_id": 10 },
-    { "symbolName": "Sym2", "parent": "klf.o", "sortIndex": 1, "_id": 11 },
-    { "symbolName": "Sym3", "parent": "klf.o", "sortIndex": 2, "_id": 12 },
-    { "symbolName": "Sym4", "parent": "klf.o", "sortIndex": 2, "_id": 13 },
-];
+/// <reference path="exampleData.ts" />
+/// <reference path="nodePositioning.ts" />
+/// <reference path="loadingAnimation.ts" />
+/// <reference path="simpleFunctions.ts" />
+/// <reference path="structures.ts" />
 
 const objectsColWidth = 400;
 const packagesColWidth = 200;
@@ -28,113 +17,12 @@ var objectCalls = [];
 var externalPackages : string[]= [];
 var calledPackages : string[]= [];
 var callingPackages : string[]= [];
-var animationProgress : number = 0;
-var continueAnimating : boolean = false;
-var circle;
 var graph;
-
-interface Call {
-    highlight?: number;
-}
-
-class Call {
-    source: number;
-    target: number;
-}
-
-// Some optional properties in a D3Symbol. TypeScript doesn't yet support
-// optional properties directly in the class, and we want to initialize
-// without specifying these values.
-interface D3Symbol {
-    highlight?: number; // Default 0; -ve values indicate a caller and +ve a callee
-    sortIndex?: number;
-    shortName?: string;
-}
-
-// Symbols which D3 expects in an array.
-class D3Symbol {
-    constructor(symbolName: string, parentName: string, index: number) {
-	this.highlight = 0;
-	this._id = index;
-	this.symbolName = symbolName;
-	this.parent = parentName;
-	this.sortIndex = 0;
-    }
-    symbolName: string;
-    parent: string;
-    _id: number;
-}
-
-// This is the contents of a 'contains' relationship.
-class Container {
-    nodes: GraphDBNode[]
-    edges: GraphDBNode[]
-}
-
-// All nodes returned by the graph database fit this pattern.
-class GraphDBNode {
-    parent: number;
-    _id: number;
-    contains: Container;
-    _source: number;
-    _target: number;
-    uri: string;
-}
 
 function makeCaption(node : GraphDBNode) : string
 {
     var uriParts : string[] = node.uri.split(':');
     return uriParts[uriParts.length-1];
-}
-
-var exampleCalls : Call[] = [
-    { source: 0, target: 4 },
-    { source: 2, target: 5 },
-    { source: 7, target: 7 },
-    { source: 5, target: 10 },
-    { source: 1, target: 2 },
-    { source: 2, target: 5 },
-    { source: 12, target: 1 },
-    { source: 13, target: 13 },
-    { source: 0, target: 12 },
-];
-
-// Add the item to the set unless it's there already, and
-// return the new set. The original is also modified, unless
-// it's null or undefined.
-
-function addToSet<T>(set : T[], item : T) : T[]
-{
-    if(set == null || set === undefined) {
-	set = [];
-    }
-    for(var i:number=0;i<set.length;i++) {
-	if(set[i] == item) return set;
-    }
-    set.push(item);
-    return set;
-}
-
-function getPositionInSet<T>(set : T[], item : T) : number
-{
-    if(set == null || set === undefined) {
-	return -1;
-    }
-    for(var i:number=0;i<set.length;i++) {
-	if(set[i] == item) return i;
-    }
-    return -1;
-}
-
-
-
-function countChars(s: string, c:string) : number
-{
-    var n:number =0;
-    for(var i:number=0;i<s.length;i++) {
-	if(s.charAt(i) == c) n++;
-    }
-    return n;
 }
 
 function abbreviateSymbol(s: string) : string
@@ -172,30 +60,6 @@ function abbreviateSymbol(s: string) : string
     return s;
 }
 
-function startLoadingAnimation()
-{
-    var svg = <HTMLElement> document.querySelector('svg');
-    var svgNS = svg.namespaceURI;
-    circle = document.createElementNS(svgNS,'circle');
-    circle.setAttribute('cx','320');
-    circle.setAttribute('cy','240');
-    circle.setAttribute('r','16');
-    circle.setAttribute('fill','#95B3D7');
-    svg.appendChild(circle);
-    continueAnimating = true;
-    setTimeout(function() { loadingAnimationTick(); }, 40);
-}
-
-function loadingAnimationTick()
-{
-    animationProgress += 1;
-    console.log("Loading animation");
-    circle.setAttribute('cx', 320+64*Math.cos(animationProgress / 25 * Math.PI));
-    circle.setAttribute('cy', 240+64*Math.sin(animationProgress / 25 * Math.PI));
-    if(continueAnimating) {
-	setTimeout(function() {loadingAnimationTick();}, 40);
-    }
-}
 
 
 function database()
@@ -310,7 +174,7 @@ function database()
 		objectCalls.push([callingObject, value]);
 	    });
 	});
-	continueAnimating = false;
+	stopLoadingAnimation();
 	title.innerHTML = "Package "+packageName;
 
         update();
@@ -335,49 +199,6 @@ function update()
 
 var blockSize : number = 64;
 
-function nodeXFunction (obj) {
-    if(obj==null) return 0;
-    if(obj.index)
-    {
-	return 32 + ((obj.index - 1) * blockSize);
-    } else {
-	console.log("Object: '"+obj.Object+"' has no index");
-	return 0;
-    }
-}
-
-function nodeYFunction (obj) {
-    if(obj===null) {
-	return 0;
-    }
-    if(obj.row) {
-	var y = (obj.row - 1) * blockSize + (16*obj.objectNo)-12;
-	return y;
-    } else {
-	console.log("Object has no row");
-	return 0;
-    }
-}
-
-function linkXFunction (obj) {
-    return nodeXFunction (obj) + packagesColWidth + obj.col * objectsColWidth;
-}
-
-function linkYFunction (obj) {
-    return nodeYFunction (obj);
-}
-
-function targetLinkXFunction(colsNumber) {
-    return  objectsColWidth * colsNumber + packagesColWidth;
-}
-
-function sourceLinkXFunction(colsNumber) {
-    return 150;
-}
-
-function nodeTranslationFunction (obj) { var x = nodeXFunction(obj);
-					 var y = nodeYFunction(obj);
-					 return "translate ("+x+" "+y+")"; }
 
 function noop() : void
 {
