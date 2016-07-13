@@ -1,6 +1,8 @@
 /// <reference path="exampleData.ts" />
 /// <reference path="nodePositioning.ts" />
 /// <reference path="loadingAnimation.ts" />
+/// <reference path="simpleFunctions.ts" />
+/// <reference path="structures.ts" />
 
 const objectsColWidth = 400;
 const packagesColWidth = 200;
@@ -17,96 +19,10 @@ var calledPackages : string[]= [];
 var callingPackages : string[]= [];
 var graph;
 
-interface Call {
-    highlight?: number;
-}
-
-class Call {
-    source: number;
-    target: number;
-}
-
-// Some optional properties in a D3Symbol. TypeScript doesn't yet support
-// optional properties directly in the class, and we want to initialize
-// without specifying these values.
-interface D3Symbol {
-    highlight?: number; // Default 0; -ve values indicate a caller and +ve a callee
-    sortIndex?: number;
-    shortName?: string;
-}
-
-// Symbols which D3 expects in an array.
-class D3Symbol {
-    constructor(symbolName: string, parentName: string, index: number) {
-	this.highlight = 0;
-	this._id = index;
-	this.symbolName = symbolName;
-	this.parent = parentName;
-	this.sortIndex = 0;
-    }
-    symbolName: string;
-    parent: string;
-    _id: number;
-}
-
-// This is the contents of a 'contains' relationship.
-class Container {
-    nodes: GraphDBNode[]
-    edges: GraphDBNode[]
-}
-
-// All nodes returned by the graph database fit this pattern.
-class GraphDBNode {
-    parent: number;
-    _id: number;
-    contains: Container;
-    _source: number;
-    _target: number;
-    uri: string;
-}
-
 function makeCaption(node : GraphDBNode) : string
 {
     var uriParts : string[] = node.uri.split(':');
     return uriParts[uriParts.length-1];
-}
-
-// Add the item to the set unless it's there already, and
-// return the new set. The original is also modified, unless
-// it's null or undefined.
-
-function addToSet<T>(set : T[], item : T) : T[]
-{
-    if(set == null || set === undefined) {
-	set = [];
-    }
-    for(var i:number=0;i<set.length;i++) {
-	if(set[i] == item) return set;
-    }
-    set.push(item);
-    return set;
-}
-
-function getPositionInSet<T>(set : T[], item : T) : number
-{
-    if(set == null || set === undefined) {
-	return -1;
-    }
-    for(var i:number=0;i<set.length;i++) {
-	if(set[i] == item) return i;
-    }
-    return -1;
-}
-
-
-
-function countChars(s: string, c:string) : number
-{
-    var n:number =0;
-    for(var i:number=0;i<s.length;i++) {
-	if(s.charAt(i) == c) n++;
-    }
-    return n;
 }
 
 function abbreviateSymbol(s: string) : string
