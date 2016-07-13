@@ -30,7 +30,6 @@ var exampleCalls : Call[] = [
 
 var d3;
 var $;
-var packageName : string;
 const packageBlockSize : number = 80;
 
 var fromSelect = $("#from_select");
@@ -129,80 +128,38 @@ function database()
 
     var fromPackageId = fromSelect.val();
     var toPackageId = toSelect.val();
+    var fromPackageText = $( "#from_select option:selected" ).text();
+    var toPackageText = $( "#to_select option:selected" ).text();
 
-    console.log("WOHA!: ", fromPackageId, toPackageId);
+    console.log('Loading routes from '+fromPackageId+' to '+ toPackageId);
 
-    $.getJSON('/graph/present/' + nodeid, function (node_info) {
+    $.getJSON('/graph/packages/route/'+fromPackageId+'/'+toPackageId, function (node_info) {
 
+        console.log(node_info)
+        // TODO: Need to update callGraph, symbolArray objectCalls
 	var objectCallGraph : { [id: number]: number[] } = {};
 	var nodeToObjectMap : { [id: number]: GraphDBNode } = {};
-	console.log("Displaying node: ", node_info);
-	var pack : GraphDBNode = node_info.nodes[0];
-	console.log("Package returned: "+pack.caption);
-	for(var o=0;o<pack.contains.nodes.length;o++) {
-	    var object : GraphDBNode = pack.contains.nodes[o];
-	    console.log("Recording object "+object.caption);
-	    var localNodes : {[Identifier:number]:boolean} = {};
-	    var externalSyms : {[Identifier:number]:number} = {};
-	    for (var s=0;s<object.contains.nodes.length;s++) {
-		var node : GraphDBNode = object.contains.nodes[s];
-		if(node.caption == "") {
-		    console.log("Loaded object with no caption! id: "+node._id);
-		}
-		if(node.parent) { // Nodes without parents are external symbols, which are ignored at the moment.
-		    if(node.parent != object._id) {
-			console.log("Symbol "+node._id+ " is in the wrong parent and will not be recorded (symbol parent "+node.parent+", object id "+object._id);
-		    } else {
-			symbolArray.push( { "symbolName": node.caption, "shortName": abbreviateSymbol(node.caption), "parent": object.caption, "sortIndex": 0, "_id": node._id});
-			console.log("Recording map of symbol "+node._id+" to object "+object._id)
-			if(nodeToObjectMap[node._id]) {
-			    console.log("Warning: symbol "+node._id+" was already mapped to "+nodeToObjectMap[node._id]._id);
-			}
-			nodeToObjectMap[node._id] = object;
-		    }
-		    localNodes[node._id] = true;
-		} else {
-		    // Possible external package?
-		    var externalPackage : string;
-		    externalPackage = node.caption.substring(3);
-		    var x: number = externalPackage.indexOf(":");
-		    console.log("Possible external package: "+externalPackage);
-		    externalPackage = externalPackage.substring(0,x);
-		    if(externalPackage != "NULL" && externalPackage != packageName) {
-			externalPackages = addToSet(externalPackages, externalPackage);
-			externalSyms[node._id] = getPositionInSet(externalPackages, externalPackage);
-		    }
-		}
-	    }
-	}
-	for(var o=0;o<pack.contains.nodes.length;o++) {
-	    var object = pack.contains.nodes[o];
-	    for (var e=0;e<object.contains.edges.length;e++) {
-		var edge = object.contains.edges[e];
-		if(localNodes[edge._source] == true && localNodes[edge._target] == true) {
-		    callGraph.push( { source: edge._source, target: edge._target } );
-		}
-		else if(localNodes[edge._source] == true && externalSyms[edge._target]>=0) {
-		    // That's a call outwards
-		    console.log("Source symbol "+edge._source+" calls external symbol "+edge._target);
-		    callGraph.push( { source: edge._source, target: -externalSyms[edge._target] } );
-		}
-	    }
-	}
 
-	// Convert the set-map thing into an array of pairs
-	Object.keys(objectCallGraph).forEach(function (key) {
-	    var callingObject = key;
-	    var callers = objectCallGraph[key];
-	    callers.forEach(function (value) {
-		objectCalls.push([callingObject, value]);
-	    });
-	});
+	//console.log("Displaying node: ", node_info);
+	//var pack : GraphDBNode = node_info.nodes[0];
+	//console.log("Package returned: "+pack.caption);
+
+        for(var p=0;p<node_info.nodes.length;p++) {
+            var node : GraphDBNode = node_info.nodes[p];
+	    symbolArray.push( { "symbolName": node.caption, "shortName": abbreviateSymbol(node.caption), "parent": "Packages", "sortIndex": 0, "_id": node._id});
+        }
+        console.log("symbolArray");
+        console.log(symbolArray);
+        for(var e=0;e<node_info.edges.length;e++) {
+            callGraph.push( { source: node_info.edges[e]._source, target: node_info.edges[e]._target } );
+        }
+        console.log("callGraph");
+        console.log(callGraph);
 
         update();
     });
     let title = <HTMLElement> document.querySelector('h1')
-    title.innerHTML = packageName;
+    title.innerHTML = "Routes: ("+fromPackageText+") -> ("+ toPackageText+")";
 }
 
 function update()
@@ -389,4 +346,3 @@ var group = d3.select(".callsIn").selectAll("rect").data(data).enter().append("g
 setPackageLabelAttributes(group.append("rect"));
 setPackageLabelTextAttributes(group.append("text"));
 
-var nodeid = "id:"+packageName;
