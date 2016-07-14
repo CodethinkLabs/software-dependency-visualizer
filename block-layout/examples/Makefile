@@ -1,17 +1,16 @@
-all:	object-view-demo package-route-demo package-view-demo packageindex
+all:	object-view-demo.js package-route-demo.js package-view-demo.js packageindex.js
 
 libs = exampleData.ts loadingAnimation.ts simpleFunctions.ts \
        nodePositioning.ts structures.ts
 
-object-view-demo: object-view-demo.ts $(libs)
+object-view-demo.js: object-view-demo.ts $(libs)
 	tsc --outfile object-view-demo.js object-view-demo.ts
 
-package-route-demo: package-route-demo.ts $(libs)
+package-route-demo.js: package-route-demo.ts $(libs)
 	tsc --outfile package-route-demo.js package-route-demo.ts
 
-package-view-demo: package-view-demo.ts $(libs)
+package-view-demo.js: package-view-demo.ts $(libs)
 	tsc --outfile package-view-demo.js package-view-demo.ts
 
-packageindex: packageindex.ts
+packageindex.js: packageindex.ts
 	tsc packageindex.ts
-
