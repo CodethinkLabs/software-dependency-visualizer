@@ -126,6 +126,8 @@ var define, exports, require, module;
             columns: userConfig.columns || 2 // Number of columns for the layout
         };
 
+        this.config.objectsColWidth=this.config.maxChildCount*this.config.blockSize+200
+
         if (this.config.showTooltips === undefined) {
             this.config.showTooltips = true;
         }
@@ -208,7 +210,7 @@ var define, exports, require, module;
         // Create the svg element that will contain the graph.
         this.svg = this.config.selection
             .append('svg')
-            .attr('width', this.config.columns*objectsColWidth + packagesColWidth*2)
+            .attr('width', this.config.columns*this.config.objectsColWidth + packagesColWidth*2)
             .attr('height', '500')
             .attr('style', 'display: block');
 
@@ -240,14 +242,14 @@ var define, exports, require, module;
         for ( var i = 0; i < this.config.columns; i++ ) {
             this.cols.push(this.svg
                 .append('g')
-                .attr('transform', 'translate(' + (packagesColWidth + i * objectsColWidth) +', 0)'));
+                .attr('transform', 'translate(' + (packagesColWidth + i * this.config.objectsColWidth) +', 0)'));
         }
 
         // Create Packages group for called
         this.called = this.svg
             .append('g')
             .attr('class', 'callsOut')
-            .attr('transform', 'translate(' + (packagesColWidth + this.config.columns * objectsColWidth) +', 0)');
+            .attr('transform', 'translate(' + (packagesColWidth + this.config.columns * this.config.objectsColWidth) +', 0)');
 
 	this.called.append('text').text("Calls to other packages").attr('x','0').attr('y','16');
 
@@ -729,22 +731,22 @@ var define, exports, require, module;
 			    return "";
 			}
 			if(obj.target < 0) {
-			    var x1 : number = linkXFunction(source);
+			    var x1 : number = linkXFunction(source, _this.config.objectsColWidth);
                             // TODO: Real fix would be to set lineXOffset to 0, but that will change
                             // the offset of the starting point.
-			    var x2 : number = targetLinkXFunction(_this.config.columns) - lineXOffset;
+			    var x2 : number = targetLinkXFunction(_this.config.columns, _this.config.objectsColWidth) - lineXOffset;
 			    var y1 : number = linkYFunction(source);
 			    var y2 : number = 24+package1OffsetY + obj.target*-packagesHeight;
 			    var x2_control_dx : number = -128;
 			} else if(obj.source < 0) {
 			    var x1 : number = sourceLinkXFunction(_this.config.columns) - lineXOffset;
-			    var x2 : number = linkXFunction(target);
+			    var x2 : number = linkXFunction(target, _this.config.objectsColWidth);
 			    var y1 : number = 24+package1OffsetY + obj.source*-packagesHeight;
 			    var y2 : number = linkYFunction(target);
 			    var x2_control_dx : number = -128;
 			} else {
-			    var x1 : number = linkXFunction(source);
-			    var x2 : number = linkXFunction(target);
+			    var x1 : number = linkXFunction(source, _this.config.objectsColWidth);
+			    var x2 : number = linkXFunction(target, _this.config.objectsColWidth);
 			    var y1 : number = linkYFunction(source);
 			    var y2 : number = linkYFunction(target);
 			    var x2_control_dx : number = 256;

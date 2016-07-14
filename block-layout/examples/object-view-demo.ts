@@ -4,7 +4,6 @@
 /// <reference path="simpleFunctions.ts" />
 /// <reference path="structures.ts" />
 
-const objectsColWidth = 400;
 const packagesColWidth = 200;
 const packagesHeight = 40;
 
