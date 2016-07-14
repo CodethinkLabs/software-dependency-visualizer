@@ -22,7 +22,7 @@ function nodeYFunction (obj) {
     }
 }
 
-function linkXFunction (obj) {
+function linkXFunction (obj, objectsColWidth) {
     return nodeXFunction (obj) + packagesColWidth + obj.col * objectsColWidth;
 }
 
@@ -30,7 +30,7 @@ function linkYFunction (obj) {
     return nodeYFunction (obj);
 }
 
-function targetLinkXFunction(colsNumber) {
+function targetLinkXFunction(colsNumber, objectsColWidth) {
     return  objectsColWidth * colsNumber + packagesColWidth;
 }
 
