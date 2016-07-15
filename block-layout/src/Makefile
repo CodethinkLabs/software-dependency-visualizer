@@ -1,3 +1,3 @@
 all:	index.ts
-	tsc index.ts || /bin/true
+	tsc --outfile index.js index.ts
 
