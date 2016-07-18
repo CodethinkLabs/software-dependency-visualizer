@@ -541,291 +541,293 @@ var define, exports, require, module;
      * @return {RelationshipGraph} The RelationshipGraph object to keep d3's chaining functionality.
      */
     RelationshipGraph.prototype.data = function(json, callGraph : Call[], objectCallGraph) {
-        if (this.verifyJson(json)) {
-            var row,
-                parents = [],
-                parentSizes = {},
-                previousParentSizes = 0,
-                _this = this,
-                parent,
-                i,
-                maxWidth,
-                maxHeight,
-                calculatedMaxChildren,
-                longestWidth;
+        if (!this.verifyJson(json)) {
+	    console.log("Invalid JSON passed to RelationshipGraph");
+	    return null;
+	}
 
-            // Ensure that the JSON is sorted by parent.
-            sortJson(json);
+        var row,
+            parents = [],
+            parentSizes = {},
+            previousParentSizes = 0,
+            _this = this,
+            parent,
+            i,
+            maxWidth,
+            maxHeight,
+            calculatedMaxChildren,
+            longestWidth;
 
-            // Loop through all of the childrenNodes in the JSON array and determine the amount of childrenNodes per parent. This will also
-            // calculate the row and index for each block and truncate the parent names to 25 characters.
-            for (i = 0; i < json.length; i++) {
-                parent = json[i].parent;
+        // Ensure that the JSON is sorted by parent.
+        sortJson(json);
 
-                if (containsKey(parentSizes, parent)) {
-                    parentSizes[parent]++;
-                } else {
-                    parentSizes[parent] = 1;
-                    parents.push(truncate(parent, this.config.truncate));
-                }
+        // Loop through all of the childrenNodes in the JSON array and determine the amount of childrenNodes per parent. This will also
+        // calculate the row and index for each block and truncate the parent names to 25 characters.
+        for (i = 0; i < json.length; i++) {
+            parent = json[i].parent;
+
+            if (containsKey(parentSizes, parent)) {
+                parentSizes[parent]++;
+            } else {
+                parentSizes[parent] = 1;
+                parents.push(truncate(parent, this.config.truncate));
             }
-
-            // Assign the indexes and rows to each child. This method also calculates the maximum amount of children per row, the longest
-            // row width, and how many rows there are.
-            var calculatedResults = assignIndexAndRow(this, json, parentSizes, parents);
-
-            calculatedMaxChildren = calculatedResults.calculatedMaxChildren;
-            longestWidth = calculatedResults.longestWidth;
-            row = calculatedResults.maxRow;
-            var parentsPerCol = calculatedResults.parentsPerCol;
-            var jsonPerCol = calculatedResults.jsonPerCol;
-
-            // Set the max width and height.
-            maxHeight = row * this.config.blockSize + parents.length*16;
-            maxWidth = longestWidth + (calculatedMaxChildren * this.config.blockSize);
-
-            // Select all of the parent nodes.
-            var parentNodes = [];
-            for (i = 0; i < this.cols.length; i++ ) {
-                parentNodes[i] = this.cols[i].selectAll('.relationshipGraph-Text')
-                    .data(parentsPerCol[i]);
-            }
-            var previousParents = []; // helper to calculate parentBoxY
-	    function parentBoxYFunction(obj, index) {
-		var objectSpacing:number = 16;
-		if (index == 0 || index === "undefined") {
-                    previousParents.push(obj);
-		    return 0;
-                }
-                // Determine the Y coordinate by determining the Y coordinate of all of the parents before. This has to be calculated completely
-                // because it is an update and can occur anywhere.
-                var previousParentSize = 0,
-                    i = index - 1;
-                while (i > -1) {
-		    var key = previousParents[i];
-		    if(key) {
-                        previousParentSize += Math.ceil(parentSizes[key] / calculatedMaxChildren);
-		    }
-                    i--;
-                }
-                previousParents.push(obj);
-
-		var y =  Math.ceil(previousParentSize) * _this.config.blockSize + (index * objectSpacing);
-		return y;
-	    }
-
-	    function parentTextYFunction(obj, index) {
-		var y : number = parentBoxYFunction(obj,index) + parentBoxHeightFunction(obj,index)/2 + parentTextFunction(obj,index).length*2;
-		return y;
-	    }
-
-	    function parentBoxHeightFunction(obj, index) {
-                var children = Math.ceil(parentSizes[obj] / calculatedMaxChildren) * calculatedMaxChildren;
-                return 8 + Math.ceil(children / calculatedMaxChildren) * _this.config.blockSize;
-	    }
-
-	    function parentTextFunction(obj, index) {
-                return obj + ' (' + parentSizes[obj] + ')';
-	    }
-
-	    // Add new parent nodes.
-            var parentGroups = [];
-            for (i = 0; i < parentNodes.length; i++) {
-                parentGroups[i] = parentNodes[i].enter().append('g');
-                parentGroups[i].append('text')
-                    .text(parentTextFunction)
-                    .attr('x', 0)
-                    .attr('y', parentTextYFunction)
-                    .style('text-anchor', 'start')
-                    .style('fill', function(obj) {
-                       return (obj.parentColor !== undefined) ? _this.config.colors[obj.parentColor] : '#000000';
-                    })
-                    .attr('class', 'relationshipGraph-Text')
-            }
-
-	    // Add a rectangle which should enclose all objects
-            for (i = 0; i < parentGroups.length; i++) {
-                previousParents = []; // helper to calculate parentBoxY
-                parentGroups[i].append('rect')
-                    .attr('x', 0)
-                    .attr('y', parentBoxYFunction)
-                    .attr('width', 80 + (_this.config.blockSize*_this.config.maxChildCount))
-                    .attr('height', parentBoxHeightFunction)
-                    .attr('class', 'relationshipGraph-ParentBox')
-                    .attr('fill', 'none')
-                    .attr('stroke', '#000000');
-            }
-
-            // Update existing parent nodes.
-            for (i = 0; i < parentNodes.length; i++) {
-                previousParents = []; // helper to calculate parentBoxY
-                parentNodes[i].select('text')
-                    .text(parentTextFunction)
-                    .attr('x', 0)
-                    .attr('y', 0)
-                    .style('fill', function(obj) {
-                        return (obj.parentColor !== undefined) ? _this.config.colors[obj.parentColor] : '#000000';
-                    })
-		    .attr("transform", function(obj, index) { return "translate(16,"+parentTextYFunction(obj,index)+") rotate (-90)"; });
-            }
-
-            // Remove deleted parent nodes.
-            for (i = 0; i < parentNodes.length; i++) {
-                parentNodes[i].exit().remove();
-            }
-
-	    // Find a node with a given name and parent
-	    function lookUpNode(objectName, symbolName)
-	    {
-		for (var i=0;i<json.length;i++) {
-		    var node = json[i];
-		    if(node.Object == symbolName && node.parent == objectName)
-			return node;
-		}
-		console.log("No object found called "+objectName+"/"+symbolName);
-		return null;
-	    }
-
-	    // Find a node with a given name and parent
-	    function lookUpNodeById(id)
-	    {
-		for (var i=0;i<json.length;i++) {
-		    var node = json[i];
-		    if(node._id == id) {
-			return node;
-		    }
-		}
-		return null;
-	    }
-
-            var childrenNodes = [];
-            for (i = 0; i < jsonPerCol.length; i++) {
-                // Select all of the children nodes.
-                childrenNodes[i] = this.cols[i].selectAll('.relationshipGraph-node')
-                    .data(jsonPerCol[i]);
-
-                // Add new child nodes.
-                _this.config.nodeDrawCallback(_this, childrenNodes[i].enter());
-            }
-
-	    function configureLinePositions(selection)
-	    {
-		selection
-		    .attr('d', function(obj) {
-
-			var source = lookUpNodeById(obj.source);
-			var target = lookUpNodeById(obj.target);
-			var package1OffsetY = -80;
-			var x1_control_dx : number = 256;
-			var lineXOffset : number = 32;
-			var lineYOffset : number = 48;
-
-			if (obj.source >= 0 && source == null) {
-			    console.log("Source "+obj.source+" not in the index!");
-			    return "";
-			}
-			if (obj.target >= 0 && target == null) {
-			    console.log("Target "+obj.target+" not in the index!");
-			    return "";
-			}
-			if(obj.target < 0) {
-			    var x1 : number = linkXFunction(source);
-                            // TODO: Real fix would be to set lineXOffset to 0, but that will change
-                            // the offset of the starting point.
-			    var x2 : number = targetLinkXFunction(_this.config.columns) - lineXOffset;
-			    var y1 : number = linkYFunction(source);
-			    var y2 : number = 24+package1OffsetY + obj.target*-packagesHeight;
-			    var x2_control_dx : number = -128;
-			} else if(obj.source < 0) {
-			    var x1 : number = sourceLinkXFunction(_this.config.columns) - lineXOffset;
-			    var x2 : number = linkXFunction(target);
-			    var y1 : number = 24+package1OffsetY + obj.source*-packagesHeight;
-			    var y2 : number = linkYFunction(target);
-			    var x2_control_dx : number = -128;
-			} else {
-			    var x1 : number = linkXFunction(source);
-			    var x2 : number = linkXFunction(target);
-			    var y1 : number = linkYFunction(source);
-			    var y2 : number = linkYFunction(target);
-			    var x2_control_dx : number = 256;
-			}
-
-
-			var path: string = "";
-                        path += " M"+(x1 + lineXOffset) + ","+(y1+lineYOffset);
-			if (y1 == y2) {
-			    if (x1 == x2) {
-                                path += " C"+(x1 + lineXOffset + 10) + ","+(y1+lineYOffset + 20);
-                                path += " "+(x1 + lineXOffset + 20) + ","+(y1+lineYOffset + 10);
-                                path += " "+(x1 + lineXOffset + 20) + ","+(y1+lineYOffset);
-                                path += " C "+(x1 + lineXOffset + 20) + ","+(y1+lineYOffset - 10);
-                                path += " "+(x1 + lineXOffset + 10) + ","+(y1+lineYOffset - 20);
-                                path += " "+(x1 + lineXOffset) + ","+(y1+lineYOffset);
-                                return path;
-			    } else {
-				path += " C "+(x1 + lineXOffset) + ","+(y1+128);
-				path += " "+(x2 + lineXOffset) + ","+(y2+128);
-				path += " "+(x2 + lineXOffset) + ","+(y2+lineYOffset);
-			    }
-			} else {
-			    path += " C "+(x1 + lineXOffset+x1_control_dx) + ","+(y1+lineYOffset);
-			    path += " "+(x2 + lineXOffset+x2_control_dx) + ","+(y2+lineYOffset);
-			    path += " "+(x2 + lineXOffset) + ","+(y2+lineYOffset);
-			}
-			return path;
-		    })
-                    .attr("marker-start", "url(#marker_circle)")
-                    .attr("marker-end", "url(#marker_arrow)")
-                    .attr('stroke', function(obj) {
-			if (obj.highlight == null) return "#444";
-			return "#000";
-		    })
-		    .attr('stroke-opacity', function(obj) {
-			if (obj.highlight == null) return "0.5";
-			if (obj.highlight == 0) return "0.1";
-			return "1.0";
-		    })
-		    .style("fill", "none");
-	    }
-
-	    /* Links */
-            var linkNodes = this.links.selectAll('.relationshipGraph-call').data(callGraph);
-
-            // Add new child nodes.
-	    var links = linkNodes.enter().append("path");
-	    configureLinePositions(links);
-
-            // Update existing child nodes.
-            for (i = 0; i < childrenNodes.length; i++) {
-                childrenNodes[i].transition(_this.config.transitionTime)
-                    .attr( "transform", function(obj) { var x = 32 + ((obj.index - 1) * _this.config.blockSize);
-                                                        var y = nodeYFunction(obj);
-                                                        return "translate ("+x+" "+y+")"; })
-                    .style('fill', function(obj) {
-                        return _this.config.colors[obj.color % _this.config.colors.length] || _this.config.colors[0];
-                    });
-            }
-
-	    var linkTransitions = linkNodes.transition(_this.config.transitionTime);
-	    configureLinePositions(linkTransitions);
-
-            // Delete removed child nodes.
-            for (i = 0; i < childrenNodes.length; i++) {
-                childrenNodes[i].exit().transition(_this.config.transitionTime).remove();
-            }
-            linkNodes.exit().transition(_this.config.transitionTime).remove();
-
-            if (this.config.showTooltips) {
-                d3.select('.d3-tip').remove();
-                this.links.call(this.tip);
-            }
-
-            this.config.selection.select('svg')
-                .attr('height', maxHeight + 15);
         }
 
+        // Assign the indexes and rows to each child. This method also calculates the maximum amount of children per row, the longest
+        // row width, and how many rows there are.
+        var calculatedResults = assignIndexAndRow(this, json, parentSizes, parents);
+
+        calculatedMaxChildren = calculatedResults.calculatedMaxChildren;
+        longestWidth = calculatedResults.longestWidth;
+        row = calculatedResults.maxRow;
+        var parentsPerCol = calculatedResults.parentsPerCol;
+        var jsonPerCol = calculatedResults.jsonPerCol;
+
+        // Set the max width and height.
+        maxHeight = row * this.config.blockSize + parents.length*16;
+        maxWidth = longestWidth + (calculatedMaxChildren * this.config.blockSize);
+
+        // Select all of the parent nodes.
+        var parentNodes = [];
+        for (i = 0; i < this.cols.length; i++ ) {
+            parentNodes[i] = this.cols[i].selectAll('.relationshipGraph-Text')
+                .data(parentsPerCol[i]);
+        }
+        var previousParents = []; // helper to calculate parentBoxY
+	function parentBoxYFunction(obj, index) {
+	    var objectSpacing:number = 16;
+	    if (index == 0 || index === "undefined") {
+                previousParents.push(obj);
+		return 0;
+            }
+            // Determine the Y coordinate by determining the Y coordinate of all of the parents before. This has to be calculated completely
+            // because it is an update and can occur anywhere.
+            var previousParentSize = 0,
+                i = index - 1;
+            while (i > -1) {
+		var key = previousParents[i];
+		if(key) {
+                    previousParentSize += Math.ceil(parentSizes[key] / calculatedMaxChildren);
+		}
+                i--;
+            }
+            previousParents.push(obj);
+
+	    var y =  Math.ceil(previousParentSize) * _this.config.blockSize + (index * objectSpacing);
+	    return y;
+	}
+
+	function parentTextYFunction(obj, index) {
+	    var y : number = parentBoxYFunction(obj,index) + parentBoxHeightFunction(obj,index)/2 + parentTextFunction(obj,index).length*2;
+	    return y;
+	}
+
+	function parentBoxHeightFunction(obj, index) {
+            var children = Math.ceil(parentSizes[obj] / calculatedMaxChildren) * calculatedMaxChildren;
+            return 8 + Math.ceil(children / calculatedMaxChildren) * _this.config.blockSize;
+	}
+
+	function parentTextFunction(obj, index) {
+            return obj + ' (' + parentSizes[obj] + ')';
+	}
+
+	// Add new parent nodes.
+        var parentGroups = [];
+        for (i = 0; i < parentNodes.length; i++) {
+            parentGroups[i] = parentNodes[i].enter().append('g');
+            parentGroups[i].append('text')
+                .text(parentTextFunction)
+                .attr('x', 0)
+                .attr('y', parentTextYFunction)
+                .style('text-anchor', 'start')
+                .style('fill', function(obj) {
+                    return (obj.parentColor !== undefined) ? _this.config.colors[obj.parentColor] : '#000000';
+                })
+                .attr('class', 'relationshipGraph-Text')
+        }
+
+	// Add a rectangle which should enclose all objects
+        for (i = 0; i < parentGroups.length; i++) {
+            previousParents = []; // helper to calculate parentBoxY
+            parentGroups[i].append('rect')
+                .attr('x', 0)
+                .attr('y', parentBoxYFunction)
+                .attr('width', 80 + (_this.config.blockSize*_this.config.maxChildCount))
+                .attr('height', parentBoxHeightFunction)
+                .attr('class', 'relationshipGraph-ParentBox')
+                .attr('fill', 'none')
+                .attr('stroke', '#000000');
+        }
+
+        // Update existing parent nodes.
+        for (i = 0; i < parentNodes.length; i++) {
+            previousParents = []; // helper to calculate parentBoxY
+            parentNodes[i].select('text')
+                .text(parentTextFunction)
+                .attr('x', 0)
+                .attr('y', 0)
+                .style('fill', function(obj) {
+                    return (obj.parentColor !== undefined) ? _this.config.colors[obj.parentColor] : '#000000';
+                })
+		.attr("transform", function(obj, index) { return "translate(16,"+parentTextYFunction(obj,index)+") rotate (-90)"; });
+        }
+
+        // Remove deleted parent nodes.
+        for (i = 0; i < parentNodes.length; i++) {
+            parentNodes[i].exit().remove();
+        }
+
+	// Find a node with a given name and parent
+	function lookUpNode(objectName, symbolName)
+	{
+	    for (var i=0;i<json.length;i++) {
+		var node = json[i];
+		if(node.Object == symbolName && node.parent == objectName)
+		    return node;
+	    }
+	    console.log("No object found called "+objectName+"/"+symbolName);
+	    return null;
+	}
+
+	// Find a node with a given name and parent
+	function lookUpNodeById(id)
+	{
+	    for (var i=0;i<json.length;i++) {
+		var node = json[i];
+		if(node._id == id) {
+		    return node;
+		}
+	    }
+	    return null;
+	}
+
+        var childrenNodes = [];
+        for (i = 0; i < jsonPerCol.length; i++) {
+            // Select all of the children nodes.
+            childrenNodes[i] = this.cols[i].selectAll('.relationshipGraph-node')
+                .data(jsonPerCol[i]);
+
+            // Add new child nodes.
+            _this.config.nodeDrawCallback(_this, childrenNodes[i].enter());
+        }
+
+	function configureLinePositions(selection)
+	{
+	    selection
+		.attr('d', function(obj) {
+
+		    var source = lookUpNodeById(obj.source);
+		    var target = lookUpNodeById(obj.target);
+		    var package1OffsetY = -80;
+		    var x1_control_dx : number = 256;
+		    var lineXOffset : number = 32;
+		    var lineYOffset : number = 48;
+
+		    if (obj.source >= 0 && source == null) {
+			console.log("Source "+obj.source+" not in the index!");
+			return "";
+		    }
+		    if (obj.target >= 0 && target == null) {
+			console.log("Target "+obj.target+" not in the index!");
+			return "";
+		    }
+		    if(obj.target < 0) {
+			var x1 : number = linkXFunction(source);
+                        // TODO: Real fix would be to set lineXOffset to 0, but that will change
+                        // the offset of the starting point.
+			var x2 : number = targetLinkXFunction(_this.config.columns) - lineXOffset;
+			var y1 : number = linkYFunction(source);
+			var y2 : number = 24+package1OffsetY + obj.target*-packagesHeight;
+			var x2_control_dx : number = -128;
+		    } else if(obj.source < 0) {
+			var x1 : number = sourceLinkXFunction(_this.config.columns) - lineXOffset;
+			var x2 : number = linkXFunction(target);
+			var y1 : number = 24+package1OffsetY + obj.source*-packagesHeight;
+			var y2 : number = linkYFunction(target);
+			var x2_control_dx : number = -128;
+		    } else {
+			var x1 : number = linkXFunction(source);
+			var x2 : number = linkXFunction(target);
+			var y1 : number = linkYFunction(source);
+			var y2 : number = linkYFunction(target);
+			var x2_control_dx : number = 256;
+		    }
+
+
+		    var path: string = "";
+                    path += " M"+(x1 + lineXOffset) + ","+(y1+lineYOffset);
+		    if (y1 == y2) {
+			if (x1 == x2) {
+                            path += " C"+(x1 + lineXOffset + 10) + ","+(y1+lineYOffset + 20);
+                            path += " "+(x1 + lineXOffset + 20) + ","+(y1+lineYOffset + 10);
+                            path += " "+(x1 + lineXOffset + 20) + ","+(y1+lineYOffset);
+                            path += " C "+(x1 + lineXOffset + 20) + ","+(y1+lineYOffset - 10);
+                            path += " "+(x1 + lineXOffset + 10) + ","+(y1+lineYOffset - 20);
+                            path += " "+(x1 + lineXOffset) + ","+(y1+lineYOffset);
+                            return path;
+			} else {
+			    path += " C "+(x1 + lineXOffset) + ","+(y1+128);
+			    path += " "+(x2 + lineXOffset) + ","+(y2+128);
+			    path += " "+(x2 + lineXOffset) + ","+(y2+lineYOffset);
+			}
+		    } else {
+			path += " C "+(x1 + lineXOffset+x1_control_dx) + ","+(y1+lineYOffset);
+			path += " "+(x2 + lineXOffset+x2_control_dx) + ","+(y2+lineYOffset);
+			path += " "+(x2 + lineXOffset) + ","+(y2+lineYOffset);
+		    }
+		    return path;
+		})
+                .attr("marker-start", "url(#marker_circle)")
+                .attr("marker-end", "url(#marker_arrow)")
+                .attr('stroke', function(obj) {
+		    if (obj.highlight == null) return "#444";
+		    return "#000";
+		})
+		.attr('stroke-opacity', function(obj) {
+		    if (obj.highlight == null) return "0.5";
+		    if (obj.highlight == 0) return "0.1";
+		    return "1.0";
+		})
+		.style("fill", "none");
+	}
+
+	/* Links */
+        var linkNodes = this.links.selectAll('.relationshipGraph-call').data(callGraph);
+
+        // Add new child nodes.
+	var links = linkNodes.enter().append("path");
+	configureLinePositions(links);
+
+        // Update existing child nodes.
+        for (i = 0; i < childrenNodes.length; i++) {
+            childrenNodes[i].transition(_this.config.transitionTime)
+                .attr( "transform", function(obj) { var x = 32 + ((obj.index - 1) * _this.config.blockSize);
+                                                    var y = nodeYFunction(obj);
+                                                    return "translate ("+x+" "+y+")"; })
+                .style('fill', function(obj) {
+                    return _this.config.colors[obj.color % _this.config.colors.length] || _this.config.colors[0];
+                });
+        }
+
+	var linkTransitions = linkNodes.transition(_this.config.transitionTime);
+	configureLinePositions(linkTransitions);
+
+        // Delete removed child nodes.
+        for (i = 0; i < childrenNodes.length; i++) {
+            childrenNodes[i].exit().transition(_this.config.transitionTime).remove();
+        }
+        linkNodes.exit().transition(_this.config.transitionTime).remove();
+
+        if (this.config.showTooltips) {
+            d3.select('.d3-tip').remove();
+            this.links.call(this.tip);
+        }
+
+        this.config.selection.select('svg')
+            .attr('height', maxHeight + 15);
         return this;
-    };
+    }
 
     return RelationshipGraph;
 });
