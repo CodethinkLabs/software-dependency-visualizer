@@ -1,3 +1,4 @@
+/// <reference path="../src/index.ts" />
 /// <reference path="exampleData.ts" />
 /// <reference path="nodePositioning.ts" />
 /// <reference path="loadingAnimation.ts" />
