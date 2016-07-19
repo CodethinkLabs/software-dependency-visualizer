@@ -175,10 +175,10 @@ function database()
 		objectCalls.push([callingObject, value]);
 	    });
 	});
-	stopLoadingAnimation();
 	title.innerHTML = "Package "+packageName;
 
         update();
+	stopLoadingAnimation();
     });
 }
 
@@ -324,7 +324,7 @@ function initGraph()
         'showTooltips': true,
         'maxChildCount': 3,
 	'showKeys': false,
-	'blockSize': 32,
+	'blockSize': blockSize,
 	'nodeDrawCallback': nodeDrawCallback,
 	'onClick': symbolClickCallback
     });

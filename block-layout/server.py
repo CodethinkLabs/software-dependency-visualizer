@@ -512,6 +512,12 @@ def package_list():
     print(repr(packages))
     return ",".join(sorted(x[0] for x in packages))
 
+@app.route('/annotatedpackagelist')
+def annotated_package_list():
+    package_calls = database.query("match (p1:Package)-[e1:`sw:contains`]->(o:Object)-[e2:`sw:contains`]->(Symbol)-[c:`sw:calls`]->(s2:Symbol)<-[e3:`sw:contains`]-(o2:Object)<-[e4:`sw:contains`]-(p2:Package) return distinct p1.name, p2.name", returns=(str,str))
+    return ",".join(sorted(x[0]+":"+x[1] for x in package_calls))
+
+
 #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 #node_number = graph_node_number("id:package/source/libgtk")
