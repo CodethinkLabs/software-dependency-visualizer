@@ -17,7 +17,8 @@ var toSelect = $("#to_select");
 var symbolArray : D3Symbol[] = [];
 var callGraph : Call[] = [];
 var objectCalls = [];
-var externalPackages : string[]= [];
+var calledPackages : string[]= [];
+var callingPackages : string[]= [];
 var graph;
 
 function makeCaption(node : GraphDBNode) : string
@@ -79,7 +80,9 @@ function database()
     symbolArray = [];
     callGraph = [];
     objectCalls = [];
-    externalPackages = [];
+    calledPackages = []
+    callingPackages = []
+    var nodeToPackageMap : { [id: number]: string } = {};
 
     var fromPackageId = fromSelect.val();
     var toPackageId = toSelect.val();
@@ -102,12 +105,38 @@ function database()
         for(var p=0;p<node_info.nodes.length;p++) {
             var node : GraphDBNode = node_info.nodes[p];
             var caption = makeCaption(node);
-	    symbolArray.push( { "symbolName": caption, "shortName": abbreviateSymbol(caption), "parent": "Packages", "sortIndex": 0, "_id": node._id});
+            nodeToPackageMap[node._id] =  caption;
+            if (node._id == fromPackageId) {
+                callingPackages = addToSet(callingPackages, caption)
+                console.log(caption)
+            }
+            if (node._id == toPackageId) {
+                calledPackages = addToSet(calledPackages, caption)
+                console.log(caption)
+            }
+            if (node._id != fromPackageId && node._id != toPackageId) {
+	        symbolArray.push( { "symbolName": caption, "shortName": abbreviateSymbol(caption), "parent": "Packages", "sortIndex": 0, "_id": node._id});
+            }
         }
         console.log("symbolArray");
         console.log(symbolArray);
         for(var e=0;e<node_info.edges.length;e++) {
-            callGraph.push( { source: node_info.edges[e]._source, target: node_info.edges[e]._target } );
+            var edge = node_info.edges[e];
+            if (edge._source == fromPackageId) {
+                var pos : number = getPositionInSet(callingPackages, nodeToPackageMap[edge._source]);
+                console.log("from ")
+                console.log(edge._source)
+                console.log(nodeToPackageMap[edge._source])
+                callGraph.push( { source: -pos-1, target: edge._target });
+            } else if (node_info.edges[e]._target == toPackageId) {
+                var pos : number = getPositionInSet(calledPackages, nodeToPackageMap[edge._target]);
+                console.log("to ")
+                console.log(edge._target)
+                console.log(nodeToPackageMap[edge._target])
+                callGraph.push( { source: edge._source, target: -pos-1 });
+            } else {
+                callGraph.push( { source: edge._source, target: edge._target } );
+            }
         }
         console.log("callGraph");
         console.log(callGraph);
@@ -123,12 +152,15 @@ function update()
     graph = initGraph();
     graph.data(symbolArray, callGraph, objectCalls);
 
-    var calloutNodes = d3.select(".callsOut").selectAll("rect").data(externalPackages);
+    var calloutNodes = d3.select(".callsOut").selectAll("rect").data(calledPackages);
     var group = calloutNodes.enter().append("g");
     setPackageLabelAttributes(group.append("rect"));
     setPackageLabelTextAttributes(group.append("text"));
 
-    calloutNodes.data(externalPackages);
+    var callinNodes = d3.select(".callsIn").selectAll("rect").data(callingPackages);
+    var group = callinNodes.enter().append("g");
+    setPackageLabelAttributes(group.append("rect"));
+    setPackageLabelTextAttributes(group.append("text"));
 }
 
 var blockSize : number = 64;
