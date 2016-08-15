@@ -38,7 +38,7 @@ DEFAULT_ENDPOINT =  'http://neo4j:insecure@localhost:7474/db/data'
 def argument_parser():
     parser = argparse.ArgumentParser(
         description="Import s-d-v data into Neo4j graph database")
-    parser.add_argument('files', metavar='FILE', nargs='+',
+    parser.add_argument('files', metavar='FILE', nargs='*',
                         help="JSON-LD data to import (YAML allowed)")
     parser.add_argument('--endpoint', '-e', metavar='URL',
                         default=DEFAULT_ENDPOINT,
