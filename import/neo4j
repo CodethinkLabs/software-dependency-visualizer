@@ -23,8 +23,15 @@ import yaml
 
 import argparse
 import datetime
+import json
 import os
 import warnings
+
+
+with open('../config.json') as config_file:
+    config = json.load(config_file)
+
+DEFAULT_NEO4J = 'http://neo4j:%s@localhost:7474/db/data'%(config['neo4j_password'])
 
 DEFAULT_ENDPOINT =  'http://neo4j:insecure@localhost:7474/db/data'
 

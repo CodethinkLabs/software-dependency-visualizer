@@ -32,8 +32,11 @@ import unicodedata
 # This is needed to be able to add Relationships to a set()
 neo4jrestclient.client.Relationship.__hash__ = lambda self: hash(self.id)
 
+with open('../config.json') as config_file:
+    config = json.load(config_file)
 
-DEFAULT_NEO4J = 'http://neo4j:insecure@localhost:7474/db/data'
+
+DEFAULT_NEO4J = 'http://neo4j:%s@localhost:7474/db/data'%(config['neo4j_password'])
 DEFAULT_PORT = '8080'
 
 
