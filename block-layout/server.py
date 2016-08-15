@@ -35,7 +35,6 @@ neo4jrestclient.client.Relationship.__hash__ = lambda self: hash(self.id)
 with open(os.path.join(os.path.dirname(__file__), '../config.json')) as config_file:
     config = json.load(config_file)
 
-
 DEFAULT_NEO4J = 'http://neo4j:%s@localhost:7474/db/data'%(config['neo4j_password'])
 DEFAULT_PORT = '8080'
 

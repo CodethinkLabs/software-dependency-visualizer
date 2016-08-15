@@ -27,13 +27,10 @@ import json
 import os
 import warnings
 
-
 with open(os.path.join(os.path.dirname(__file__), '../config.json')) as config_file:
     config = json.load(config_file)
 
-DEFAULT_NEO4J = 'http://neo4j:%s@localhost:7474/db/data'%(config['neo4j_password'])
-
-DEFAULT_ENDPOINT =  'http://neo4j:insecure@localhost:7474/db/data'
+DEFAULT_ENDPOINT = 'http://neo4j:%s@localhost:7474/db/data'%(config['neo4j_password'])
 
 def argument_parser():
     parser = argparse.ArgumentParser(
