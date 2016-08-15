@@ -105,7 +105,7 @@ class ParseLibParser(object):
 
         for (objectName,objectContents) in self.objectSymbols.items():
             objectIdentifier = "id:"+self.packageName+":"+objectName
-            obj = { '@id:': objectIdentifier, '@type': 'sw:Object',
+            obj = { '@id': objectIdentifier, '@type': 'sw:Object',
                     'name': objectName, 'contains': [] }
             for symbol in objectContents:
                 if symbol=="":
