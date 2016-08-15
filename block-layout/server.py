@@ -32,7 +32,7 @@ import unicodedata
 # This is needed to be able to add Relationships to a set()
 neo4jrestclient.client.Relationship.__hash__ = lambda self: hash(self.id)
 
-with open('../config.json') as config_file:
+with open(os.path.join(os.path.dirname(__file__), '../config.json')) as config_file:
     config = json.load(config_file)
 
 
