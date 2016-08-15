@@ -177,9 +177,18 @@ function database()
 	});
 	title.innerHTML = "Package "+packageName;
 
+	if(symbolArray.length <=0) {
+	title.innerHTML = "Package "+packageName+": no symbols found.";
+	stopLoadingAnimation();
+	return;
+	}
+
         update();
 	stopLoadingAnimation();
-    });
+    }).fail(function() {	title.innerHTML = "Package "+packageName+" not found in database.";
+	stopLoadingAnimation();
+
+ });
 }
 
 function update()
