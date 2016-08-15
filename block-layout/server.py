@@ -523,4 +523,4 @@ def annotated_package_list():
 #node_number = graph_node_number("id:package/source/libgtk")
 #print(graph_present(node_number))
 
-app.run(port=args.port)
+app.run(port=args.port, host="0.0.0.0", server='cherrypy')

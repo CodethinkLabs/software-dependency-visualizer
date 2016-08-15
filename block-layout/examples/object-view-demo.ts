@@ -142,7 +142,7 @@ function database()
 	    for (var e=0;e<object.contains.edges.length;e++) {
 		var edge = object.contains.edges[e];
 		if(localNodes[edge._source] == true && localNodes[edge._target] == true) {
-		    callGraph.push( { source: edge._source, target: edge._target } );
+		    addCallToSet(callGraph, { source: edge._source, target: edge._target } );
 		}
 		else if(localNodes[edge._source] == true && externalSyms[edge._target]>=0) {
 		    // That's a call outwards
@@ -152,7 +152,7 @@ function database()
 		    var pos : number = getPositionInSet(calledPackages, calledPackage);
 
 		    console.log("Source symbol "+edge._source+" calls external symbol "+edge._target);
-		    callGraph.push( { source: edge._source, target: -pos-1 } );
+		    addCallToSet(callGraph, { source: edge._source, target: -pos-1 } );
 		}
 		else if(externalSyms[edge._source] >= 0 && localNodes[edge._target]==true) {
 		    // That's a call inwards
@@ -162,7 +162,7 @@ function database()
 		    var pos : number = getPositionInSet(callingPackages, callingPackage);
 
 		    console.log("External symbol "+edge._source+" calls local symbol "+edge._target);
-		    callGraph.push( { source: -pos-1, target: edge._target } );
+		    addCallToSet(callGraph, { source: -pos-1, target: edge._target } );
 		}
 	    }
 	}

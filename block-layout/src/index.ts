@@ -1,4 +1,3 @@
-/// <reference path="../examples/object-view-demo.ts"/>
 /**
  * The MIT License (MIT).
  *
@@ -327,13 +326,22 @@ var define, exports, require, module;
      * @param json {Array} The Array to be sorted.
      */
     var sortJson = function(json) {
+	if(json === undefined) { return json; }
         json.sort(function(child1, child2) {
             var parent1 = child1.parent.toLowerCase(),
                 parent2 = child2.parent.toLowerCase();
-	    var name1 = child1.symbolName.toLowerCase(),
+            if(child1.symbolName === undefined ||
+               child2.symbolName === undefined) return 0;
+
+            var name1 = child1.symbolName.toLowerCase(),
 		name2 = child2.symbolName.toLowerCase();
-            return (parent1 > parent2) ? 1 : (parent1 < parent2) ? -1 :
-		(name1 > name2) ? 1: (name1 < name2) ? -1: 0
+            if(parent1 > parent2) return 1;
+            if(parent1 < parent2) return -1;
+	    if(name1 > name2) return 1;
+            if(name1 < name2) return -1;
+	    if(child1._id > child2._id) return 1;
+            if(child1._id < child2._id) return -1;
+	    return 0;
         });
     };
 

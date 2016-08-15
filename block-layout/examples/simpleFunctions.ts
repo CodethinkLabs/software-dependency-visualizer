@@ -14,6 +14,24 @@ function addToSet<T>(set : T[], item : T) : T[]
     return set;
 }
 
+// Annoyingly, equivalence tests on structures don't work
+// the way we'd like, so this is a version which does
+// a deep comparison on a specific type:
+function addCallToSet<T>(set : Call[], item : Call) : Call[]
+{
+    if(set == null || set === undefined) {
+	set = [];
+    }
+    for(var i:number=0;i<set.length;i++) {
+	if(set[i].source == item.source &&
+	   set[i].target == item.target)
+		return set;
+    }
+    set.push(item);
+    return set;
+}
+
+
 function getPositionInSet<T>(set : T[], item : T) : number
 {
     if(set == null || set === undefined) {

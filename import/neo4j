@@ -135,7 +135,6 @@ def createRelationships(node, relationships, context, graph, wipeDatabase):
                     rel_type=key,
                     end_node=target,
                     limit=2)
-            print("Existing relations for %s->%s: %d"%(node, target, len(list(existing_rels))))
             if len(list(existing_rels)) == 0:
                 relationship = py2neo.Relationship(node, key, target)
                 relationship.properties['name'] = compact_uri(key, context)

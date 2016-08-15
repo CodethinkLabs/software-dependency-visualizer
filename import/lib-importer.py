@@ -128,7 +128,7 @@ def scanFile(directory, filename):
     if packageName.startswith("calls."): packageName = packageName[6:]
     if packageName.endswith(".a.cache"): packageName = packageName[:-8]
 
-    parserResult = subprocess.check_output([parser, os.path.join(directory, filename)], stdin=None).decode("utf-8")
+    parserResult = subprocess.check_output("%s %s"%(parser, os.path.join(directory, filename)), stdin=None, shell=True).decode("utf-8")
     print("Parser returned %d bytes"%len(parserResult))
     parser = ParseLibParser(packageName)
     parser.parse(parserResult)
@@ -161,7 +161,10 @@ def main():
     while True:
         l = indexfile.readline()
         if l == "": break
+        l = l.replace("::", "**")
         (symbol, objectName, libraryName) = l.split(":")
+        symbol = symbol.replace("**", "::")
+
         index[symbol]= "%s:%s"%(libraryName.strip(),objectName.strip())
 
     if len(sys.argv) > 1:

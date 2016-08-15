@@ -18,7 +18,22 @@ var objectCalls = [];
 var externalPackages : string[]= [];
 var calledPackages : string[]= [];
 var callingPackages : string[]= [];
+var packages: string[] = [];
 var graph;
+
+var stagesComplete : number;
+
+function thread_joiner()
+{
+   stagesComplete += 1;
+   console.log("Joiner stage "+stagesComplete+". There are "+packages.length+" packages present.");
+   if (stagesComplete >= 2) {
+	for(var i:number=0;i<packages.length;i++) {
+	    symbolArray.push(new D3Symbol(packages[i], 'universe', i));
+	}
+        update();
+   }
+}
 
 function loadPackagesFromDatabase()
 {
@@ -28,6 +43,8 @@ function loadPackagesFromDatabase()
     callGraph = [];
     objectCalls = [];
     externalPackages = [];
+    stagesComplete = 0;
+    packages = [];
 
     let title = <HTMLElement> document.querySelector('h1')
     title.innerHTML = "Loading package index";
@@ -35,12 +52,12 @@ function loadPackagesFromDatabase()
     startLoadingAnimation();
     console.log("Requesting package list from server");
     $.get('/annotatedpackagelist', function (package_call_list) {
-	var packages: string[] = [];
-	console.log("Got package list");
+	console.log("Got package list" + package_call_list);
 	title.innerHTML = "Package List";
 	continueAnimating = false;
 	var package_calls : string[] = package_call_list.split(',')
-	for(var i:number=0;i<package_calls.length;i++) {
+	if (package_call_list.length != 0) {
+	for(var i:number=0;i<package_calls.length;i++) {            
 	    var fields : string [] = package_calls[i].split(':');
 	    var caller : string = fields[0];
 	    var called : string = fields[1];
@@ -48,11 +65,19 @@ function loadPackagesFromDatabase()
 	    addToSet(packages, called);
 	    //callGraph.push ( { source: getPositionInSet(packages, caller), target: getPositionInSet(packages, called) } )
 	    }
-	for(var i:number=0;i<packages.length;i++) {
-	    symbolArray.push(new D3Symbol(packages[i], 'universe', i));
+        }
+        thread_joiner();
+    });
+    $.get('/packagelist', function (package_call_list) {
+	console.log("Got simple package list " + package_call_list);
+	title.innerHTML = "Package List";
+	continueAnimating = false;
+	var package_list : string[] = package_call_list.split(',');
+        console.log("That's "+package_list.length+" packages");
+	for(var i:number=0;i<package_list.length;i++) {            
+	    addToSet(packages, package_list[i]);
 	}
-
-        update();
+        thread_joiner();
     });
 }
 
