@@ -257,4 +257,5 @@ def main():
             graph.schema.create_uniqueness_constraint('Resource', property_key)
 
 
-main()
+if __name__=="__main__":
+    main()
