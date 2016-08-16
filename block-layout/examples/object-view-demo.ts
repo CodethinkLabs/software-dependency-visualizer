@@ -185,7 +185,8 @@ function database()
 
         update();
 	stopLoadingAnimation();
-    }).fail(function() {	title.innerHTML = "Package "+packageName+" not found in database.";
+    }).fail(function(jqXHR, failText, errorThrown) {	title.innerHTML = "Package "+packageName+" not found in database.";
+							console.log("Query failed with error code "+errorThrown+", text: "+failText);
 	stopLoadingAnimation();
 
  });
