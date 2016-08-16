@@ -65,7 +65,7 @@ class ParseLibParser(object):
         if callingSymbol not in self.symbolCalls: self.symbolCalls[callingSymbol] = []
 
         if callType == "u":
-            callDest = self.packageName+":"+self.currentObjectName+":"+demangle(calledSymbol)
+            callDest = "id:"+self.packageName+":"+self.currentObjectName+":"+demangle(calledSymbol)
         elif calledSymbol not in index:
             callDest = "NULL:"+demangle(calledSymbol)
             print("%s not found in index"%calledSymbol)
