@@ -185,8 +185,14 @@ function database()
 
         update();
 	stopLoadingAnimation();
-    }).fail(function(jqXHR, failText, errorThrown) {	title.innerHTML = "Package "+packageName+" not found in database.";
-							console.log("Query failed with error code "+errorThrown+", text: "+failText);
+    }).fail(function(jqXHR, failText, errorThrown) {
+	console.log("Query failed with error code "+errorThrown+", text: "+failText);
+
+	if(errorThrown == "Service Unavailable") {
+	    title.innerHTML = "Package "+packageName+" took too long to load. Try again later (the result may be cached).";
+	} else {
+	    title.innerHTML = "Package "+packageName+" not found in database.";
+	}
 	stopLoadingAnimation();
 
  });
