@@ -98,6 +98,8 @@ class ParseLibParser(object):
                                         callingSymbol = m.group(3))
 
     def getYaml(self):
+        totalSymbols = 0
+
         package = {'contains': [], '@id': "id:"+self.packageName,
                    '@type':'sw:Package', 'name': self.packageName }
         yamlRoot = { '@context': ['http://localhost:8000/context.jsonld'],
@@ -112,12 +114,18 @@ class ParseLibParser(object):
                     print("Zero-length symbol found in objectContents for "+objectName)
                     exit(1)
                 symbolIdentifier = objectIdentifier+":"+demangle(symbol)
+                totalSymbols += 1
                 symbolYaml = { '@id': symbolIdentifier,
                                'name': demangle(symbol),
                                '@type':'sw:Symbol',
                                'calls': list(map(demangle, self.symbolCalls[symbol])) }
                 obj['contains'].append(symbolYaml)
             package['contains'].append(obj)
+
+        if totalSymbols == 0:
+            print("%s has no symbols, so returning empty YAML"%self.packageName)
+            return "{}"
+
         return yaml.dump(yamlRoot)
 
 def scanFile(directory, filename):

@@ -171,6 +171,9 @@ def main():
         # Avoid fetching a file that we have available locally. This is a bit
         # hacky though.
         default_context_url = 'http://localhost:8000/context.jsonld'
+        if '@context' not in data:
+            print("Empty YAML; skipping")
+            continue
         if default_context_url in data['@context']:
             index = data['@context'].index(default_context_url)
             data['@context'][index] = default_context
