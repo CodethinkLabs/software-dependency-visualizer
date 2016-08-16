@@ -6,7 +6,7 @@ import subprocess
 import sys
 import yaml
 
-index = {}
+index = None
 
 # Improved 'libcache' data importer. Turns .a.cache files into YAML by
 # invoking the proprietary parser directly.
@@ -63,7 +63,7 @@ class ParseLibParser(object):
         global index
         if callingSymbol in self.dataSymbols or calledSymbol in self.dataSymbols: return
         if callingSymbol not in self.symbolCalls: self.symbolCalls[callingSymbol] = []
-
+        loadIndex()
         if callType == "u":
             callDest = "id:"+self.packageName+":"+self.currentObjectName+":"+demangle(calledSymbol)
         elif calledSymbol not in index:
@@ -146,15 +146,12 @@ def scanDirectory(directory):
         if f.endswith(".a.cache"):
             scanFile(directory, f)
 
-def main():
+def loadIndex():
     global index
-    # Load the symbol directory
 
-    if 'PARSE_LIB' not in os.environ or not os.path.exists(os.environ['PARSE_LIB']):
-        print("PARSE_LIB must be set to a valid cache file parser.")
-        exit(1)
+    # Skip if it's already loaded.
+    if index is not None: return
 
-    # Load the index
     indexfile = open("alldefs_sorted_uniq")
     index = {}
 
@@ -166,6 +163,11 @@ def main():
         symbol = symbol.replace("**", "::")
 
         index[symbol]= "%s:%s"%(libraryName.strip(),objectName.strip())
+
+def main():
+    if 'PARSE_LIB' not in os.environ or not os.path.exists(os.environ['PARSE_LIB']):
+        print("PARSE_LIB must be set to a valid cache file parser.")
+        exit(1)
 
     if len(sys.argv) > 1:
         if os.path.isdir(sys.argv[1]):
